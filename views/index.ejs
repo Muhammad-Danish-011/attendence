@@ -19,24 +19,23 @@
     <h1 class="text-center mb-4">ZKTeco Device Dashboard</h1>
 
     <!-- DEVICE INFO -->
-  <!-- DEVICE INFO -->
-<div class="card shadow p-3 mb-4">
-    <h3>📟 Device Info</h3>
-    <table class="table table-bordered mt-3">
-        <tr>
-            <th>User Count</th>
-            <td><%= typeof info !== "undefined" ? info.userCounts : 0 %></td>
-        </tr>
-        <tr>
-            <th>Log Count</th>
-            <td><%= typeof info !== "undefined" ? info.logCounts : 0 %></td>
-        </tr>
-        <tr>
-            <th>Log Capacity</th>
-            <td><%= typeof info !== "undefined" ? info.logCapacity : 0 %></td>
-        </tr>
-    </table>
-</div>
+    <div class="card shadow p-3 mb-4">
+        <h3>📟 Device Info</h3>
+        <table class="table table-bordered mt-3">
+            <tr>
+                <th>User Count</th>
+                <td><%= info ? info.userCounts : 0 %></td>
+            </tr>
+            <tr>
+                <th>Log Count</th>
+                <td><%= info ? info.logCounts : 0 %></td>
+            </tr>
+            <tr>
+                <th>Log Capacity</th>
+                <td><%= info ? info.logCapacity : 0 %></td>
+            </tr>
+        </table>
+    </div>
 
     <!-- ALL USERS -->
     <div class="card shadow p-3 mb-4">
@@ -51,17 +50,22 @@
                     <th>Card No</th>
                 </tr>
             </thead>
-
             <tbody>
-                <% allUsers.forEach(user => { %>
+                <% if (allUsers && allUsers.length > 0) { %>
+                    <% allUsers.forEach(user => { %>
+                        <tr>
+                            <td><%= user.uid %></td>
+                            <td><%= user.userId %></td>
+                            <td><%= user.name %></td>
+                            <td><%= user.role === 14 ? "Admin" : "User" %></td>
+                            <td><%= user.cardno %></td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
                     <tr>
-                        <td><%= user.uid %></td>
-                        <td><%= user.userId %></td>
-                        <td><%= user.name %></td>
-                        <td><%= user.role === 14 ? "Admin" : "User" %></td>
-                        <td><%= user.cardno %></td>
+                        <td colspan="5" class="text-center text-muted">No users found</td>
                     </tr>
-                <% }) %>
+                <% } %>
             </tbody>
         </table>
     </div>
@@ -79,49 +83,56 @@
                     <th>Card No</th>
                 </tr>
             </thead>
-
             <tbody>
-                <% adminUsers.forEach(admin => { %>
+                <% if (adminUsers && adminUsers.length > 0) { %>
+                    <% adminUsers.forEach(admin => { %>
+                        <tr>
+                            <td><%= admin.uid %></td>
+                            <td><%= admin.userId %></td>
+                            <td><%= admin.name %></td>
+                            <td><%= admin.role %></td>
+                            <td><%= admin.cardno %></td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
                     <tr>
-                        <td><%= admin.uid %></td>
-                        <td><%= admin.userId %></td>
-                        <td><%= admin.name %></td>
-                        <td><%= admin.role %></td>
-                        <td><%= admin.cardno %></td>
+                        <td colspan="5" class="text-center text-muted">No admin found</td>
                     </tr>
-                <% }) %>
+                <% } %>
             </tbody>
         </table>
     </div>
 
-
-
     <!-- ATTENDANCE LOGS -->
-<div class="card shadow p-3 mb-4">
-    <h3>🕒 Attendance Logs</h3>
-    <table class="table table-striped table-bordered">
-        <thead>
-            <tr>
-                <th>User SN</th>
-                <th>Device User ID</th>
-                <th>Record Time</th>
-                <th>IP Address</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            <% attendanceLogs.forEach(log => { %>
+    <div class="card shadow p-3 mb-4">
+        <h3>🕒 Attendance Logs</h3>
+        <table class="table table-striped table-bordered">
+            <thead>
                 <tr>
-                    <td><%= log.userSn %></td>
-                    <td><%= log.deviceUserId %></td>
-                    <td><%= new Date(log.recordTime).toLocaleString() %></td>
-                    <td><%= log.ip %></td>
+                    <th>User SN</th>
+                    <th>Device User ID</th>
+                    <th>Record Time</th>
+                    <th>IP Address</th>
                 </tr>
-            <% }) %>
-        </tbody>
-    </table>
-</div>
-
+            </thead>
+            <tbody>
+                <% if (attendanceLogs && attendanceLogs.length > 0) { %>
+                    <% attendanceLogs.forEach(log => { %>
+                        <tr>
+                            <td><%= log.userSn %></td>
+                            <td><%= log.deviceUserId %></td>
+                            <td><%= new Date(log.recordTime).toLocaleString() %></td>
+                            <td><%= log.ip %></td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No attendance logs available</td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
 
 </body>
 </html>
