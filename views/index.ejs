@@ -19,23 +19,24 @@
     <h1 class="text-center mb-4">ZKTeco Device Dashboard</h1>
 
     <!-- DEVICE INFO -->
-    <div class="card shadow p-3 mb-4">
-        <h3>📟 Device Info</h3>
-        <table class="table table-bordered mt-3">
-            <tr>
-                <th>User Count</th>
-                <td><%= info?.userCounts %></td>
-            </tr>
-            <tr>
-                <th>Log Count</th>
-                <td><%= info?.logCounts %></td>
-            </tr>
-            <tr>
-                <th>Log Capacity</th>
-                <td><%= info?.logCapacity %></td>
-            </tr>
-        </table>
-    </div>
+  <!-- DEVICE INFO -->
+<div class="card shadow p-3 mb-4">
+    <h3>📟 Device Info</h3>
+    <table class="table table-bordered mt-3">
+        <tr>
+            <th>User Count</th>
+            <td><%= typeof info !== "undefined" ? info.userCounts : 0 %></td>
+        </tr>
+        <tr>
+            <th>Log Count</th>
+            <td><%= typeof info !== "undefined" ? info.logCounts : 0 %></td>
+        </tr>
+        <tr>
+            <th>Log Capacity</th>
+            <td><%= typeof info !== "undefined" ? info.logCapacity : 0 %></td>
+        </tr>
+    </table>
+</div>
 
     <!-- ALL USERS -->
     <div class="card shadow p-3 mb-4">
