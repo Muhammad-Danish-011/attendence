@@ -2,137 +2,685 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ZKTeco Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZKTeco Multi-Device Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #f7f9fc; }
-        .card { border-radius: 12px; }
-        h3 { margin-top: 30px; }
-        table { background: white; }
-        th { background: #f0f2f5; }
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --danger: #e63946;
+            --warning: #fca311;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            padding: 1.5rem 0;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            color: white;
+            border-bottom: none;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+        
+        .card-header-in {
+            background: linear-gradient(to right, #28a745, #20c997);
+        }
+        
+        .card-header-out {
+            background: linear-gradient(to right, #dc3545, #e83e8c);
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        table {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        th {
+            background-color: #f0f2f5;
+            font-weight: 600;
+            color: var(--dark);
+            border: none;
+            padding: 1rem;
+        }
+        
+        td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-color: #f0f2f5;
+        }
+        
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .badge-in {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid #28a745;
+        }
+        
+        .badge-out {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+        
+        .badge-admin {
+            background-color: rgba(252, 163, 17, 0.2);
+            color: var(--warning);
+        }
+        
+        .badge-user {
+            background-color: rgba(67, 97, 238, 0.2);
+            color: var(--primary);
+        }
+        
+        .badge-online {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+        
+        .badge-offline {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+        
+        .stats-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        
+        .stats-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .stats-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stats-label {
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 50px;
+            padding: 0.6rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.4);
+        }
+        
+        .device-tabs {
+            border-bottom: 2px solid #dee2e6;
+            margin-bottom: 1.5rem;
+        }
+        
+        .device-tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            font-weight: 600;
+            color: #6c757d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .device-tab.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+        
+        .device-tab:hover {
+            color: var(--primary);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #dee2e6;
+        }
+        
+        .log-count-badge {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .card-body {
+                padding: 1rem;
+            }
+            
+            th, td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
     </style>
 </head>
 
-<body class="container py-4">
-
-    <h1 class="text-center mb-4">ZKTeco Device Dashboard</h1>
-
-    <!-- DEVICE INFO -->
-    <div class="card shadow p-3 mb-4">
-        <h3>📟 Device Info</h3>
-        <table class="table table-bordered mt-3">
-            <tr>
-                <th>User Count</th>
-                <td><%= info ? info.userCounts : 0 %></td>
-            </tr>
-            <tr>
-                <th>Log Count</th>
-                <td><%= info ? info.logCounts : 0 %></td>
-            </tr>
-            <tr>
-                <th>Log Capacity</th>
-                <td><%= info ? info.logCapacity : 0 %></td>
-            </tr>
-        </table>
+<body>
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2"><i class="fas fa-fingerprint me-2"></i>ZKTeco Multi-Device Dashboard</h1>
+                    <p class="mb-0">Real-time data from your biometric devices</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <button class="btn btn-light refresh-btn" onclick="refreshData()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- ALL USERS -->
-    <div class="card shadow p-3 mb-4">
-        <h3>👥 All Users</h3>
-        <table class="table table-striped table-bordered">
-            <thead>
-                <tr>
-                    <th>UID</th>
-                    <th>UserID</th>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Card No</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% if (allUsers && allUsers.length > 0) { %>
-                    <% allUsers.forEach(user => { %>
-                        <tr>
-                            <td><%= user.uid %></td>
-                            <td><%= user.userId %></td>
-                            <td><%= user.name %></td>
-                            <td><%= user.role === 14 ? "Admin" : "User" %></td>
-                            <td><%= user.cardno %></td>
-                        </tr>
-                    <% }) %>
-                <% } else { %>
+    <div class="container py-4">
+        <!-- Device Tabs -->
+        <div class="device-tabs">
+            <button class="device-tab active" onclick="switchDevice('192.168.18.253')">
+                <i class="fas fa-sign-in-alt me-2"></i>IN Device (192.168.18.253)
+            </button>
+            <button class="device-tab" onclick="switchDevice('192.168.18.252')">
+                <i class="fas fa-sign-out-alt me-2"></i>OUT Device (192.168.18.252)
+            </button>
+            <button class="device-tab" onclick="switchDevice('combined')">
+                <i class="fas fa-network-wired me-2"></i>Combined View
+            </button>
+        </div>
+
+        <!-- Device Status Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stats-number" id="userCount">0</div>
+                    <div class="stats-label">Total Users</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div class="stats-number" id="logCount">0</div>
+                    <div class="stats-label">Total Logs</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-icon text-success">
+                        <i class="fas fa-sign-in-alt"></i>
+                    </div>
+                    <div class="stats-number text-success" id="inLogCount">0</div>
+                    <div class="stats-label">IN Logs</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-icon text-danger">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </div>
+                    <div class="stats-number text-danger" id="outLogCount">0</div>
+                    <div class="stats-label">OUT Logs</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEVICE INFO -->
+        <div class="card">
+            <div class="card-header" style="background: linear-gradient(to right, var(--primary), var(--secondary));">
+                <i class="fas fa-info-circle me-2"></i>Device Information
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">Device Type</th>
+                                <td id="deviceType">ZKTeco BioAttendance</td>
+                            </tr>
+                            <tr>
+                                <th>IP Address</th>
+                                <td id="deviceIP">192.168.18.253</td>
+                            </tr>
+                            <tr>
+                                <th>Port</th>
+                                <td>4370</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">User Count</th>
+                                <td id="userCountDetail">0</td>
+                            </tr>
+                            <tr>
+                                <th>Log Count</th>
+                                <td id="logCountDetail">0</td>
+                            </tr>
+                            <tr>
+                                <th>Log Capacity</th>
+                                <td id="logCapacityDetail">0</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALL USERS -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(to right, var(--primary), var(--secondary));">
+                <span><i class="fas fa-users me-2"></i>All Users</span>
+                <span class="badge bg-light text-dark rounded-pill log-count-badge" id="allUsersCount">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>UID</th>
+                                <th>UserID</th>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Card No</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allUsersTable">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN USERS -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(to right, var(--primary), var(--secondary));">
+                <span><i class="fas fa-user-shield me-2"></i>Admin Users</span>
+                <span class="badge bg-warning rounded-pill log-count-badge" id="adminUsersCount">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>UID</th>
+                                <th>UserID</th>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Card No</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminUsersTable">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- IN ATTENDANCE LOGS -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center card-header-in">
+                <span><i class="fas fa-sign-in-alt me-2"></i>IN Attendance Logs</span>
+                <span class="badge bg-light text-success rounded-pill log-count-badge" id="inLogsCount">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User SN</th>
+                                <th>Device User ID</th>
+                                <th>Name</th>
+                                <th>Record Time</th>
+                                <th>IP Address</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inAttendanceLogsTable">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- OUT ATTENDANCE LOGS -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center card-header-out">
+                <span><i class="fas fa-sign-out-alt me-2"></i>OUT Attendance Logs</span>
+                <span class="badge bg-light text-danger rounded-pill log-count-badge" id="outLogsCount">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User SN</th>
+                                <th>Device User ID</th>
+                                <th>Name</th>
+                                <th>Record Time</th>
+                                <th>IP Address</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="outAttendanceLogsTable">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALL ATTENDANCE LOGS (Combined) -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(to right, var(--primary), var(--secondary));">
+                <span><i class="fas fa-clock me-2"></i>All Attendance Logs</span>
+                <span class="badge bg-light text-dark rounded-pill log-count-badge" id="allLogsCount">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User SN</th>
+                                <th>Device User ID</th>
+                                <th>Name</th>
+                                <th>Record Time</th>
+                                <th>IP Address</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allAttendanceLogsTable">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Current active device view
+        let currentDevice = '192.168.18.253';
+        
+        // Initialize with empty data structure
+        let allData = {
+            deviceData: {
+                '192.168.18.253': {
+                    info: {},
+                    allUsers: [],
+                    adminUsers: [],
+                    attendanceLogs: [],
+                    deviceIP: '192.168.18.253',
+                    status: 'offline'
+                },
+                '192.168.18.252': {
+                    info: {},
+                    allUsers: [],
+                    adminUsers: [],
+                    attendanceLogs: [],
+                    deviceIP: '192.168.18.252',
+                    status: 'offline'
+                }
+            },
+            combinedData: {
+                info: {},
+                allUsers: [],
+                adminUsers: [],
+                attendanceLogs: []
+            }
+        };
+
+        // Try to get initial data from server, fallback to empty data
+        try {
+            const serverData = JSON.stringify({ deviceData, combinedData });
+            if (serverData && serverData.deviceData) {
+                allData = serverData;
+            }
+        } catch (error) {
+            console.log('Using default data structure');
+        }
+
+        // Function to switch between device views
+        function switchDevice(device) {
+            currentDevice = device;
+            
+            // Update active tab
+            document.querySelectorAll('.device-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update dashboard with selected device data
+            updateDashboard();
+        }
+
+        // Function to update the dashboard with current device data
+        function updateDashboard() {
+            let data;
+            
+            if (currentDevice === 'combined') {
+                data = allData.combinedData;
+                document.getElementById('deviceIP').textContent = 'Multiple Devices';
+                document.getElementById('deviceType').textContent = 'Combined View';
+            } else {
+                data = allData.deviceData[currentDevice];
+                if (data) {
+                    document.getElementById('deviceIP').textContent = data.deviceIP;
+                    document.getElementById('deviceType').textContent = data.info?.type || 'ZKTeco Device';
+                }
+            }
+
+            if (!data) {
+                data = {
+                    info: {},
+                    allUsers: [],
+                    adminUsers: [],
+                    attendanceLogs: []
+                };
+            }
+
+            // Separate IN and OUT logs
+            const inLogs = data.attendanceLogs?.filter(log => log.type === 'IN') || [];
+            const outLogs = data.attendanceLogs?.filter(log => log.type === 'OUT') || [];
+            const allLogs = data.attendanceLogs || [];
+
+            // Update stats cards
+            const info = data.info || {};
+            document.getElementById('userCount').textContent = info.userCounts || data.allUsers?.length || 0;
+            document.getElementById('logCount').textContent = allLogs.length;
+            document.getElementById('inLogCount').textContent = inLogs.length;
+            document.getElementById('outLogCount').textContent = outLogs.length;
+            
+            // Update device info details
+            document.getElementById('userCountDetail').textContent = info.userCounts || data.allUsers?.length || 0;
+            document.getElementById('logCountDetail').textContent = allLogs.length;
+            document.getElementById('logCapacityDetail').textContent = (info.logCapacity || 0).toLocaleString();
+            
+            // Update counts in headers
+            document.getElementById('allUsersCount').textContent = data.allUsers?.length || 0;
+            document.getElementById('adminUsersCount').textContent = data.adminUsers?.length || 0;
+            document.getElementById('inLogsCount').textContent = inLogs.length;
+            document.getElementById('outLogsCount').textContent = outLogs.length;
+            document.getElementById('allLogsCount').textContent = allLogs.length;
+            
+            // Populate all users table
+            populateUsersTable(data.allUsers, 'allUsersTable');
+            
+            // Populate admin users table
+            populateUsersTable(data.adminUsers, 'adminUsersTable');
+            
+            // Populate IN logs table
+            populateLogsTable(inLogs, 'inAttendanceLogsTable');
+            
+            // Populate OUT logs table
+            populateLogsTable(outLogs, 'outAttendanceLogsTable');
+            
+            // Populate ALL logs table
+            populateLogsTable(allLogs, 'allAttendanceLogsTable');
+        }
+
+        // Function to populate users table
+        function populateUsersTable(users, tableId) {
+            const table = document.getElementById(tableId);
+            table.innerHTML = '';
+            
+            if (users && users.length > 0) {
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.uid || 'N/A'}</td>
+                        <td>${user.userId || 'N/A'}</td>
+                        <td>${user.name || 'Unknown'}</td>
+                        <td><span class="status-badge ${user.role === 14 ? 'badge-admin' : 'badge-user'}">${user.role === 14 ? 'Admin' : 'User'}</span></td>
+                        <td>${user.cardno || 'N/A'}</td>
+                    `;
+                    table.appendChild(row);
+                });
+            } else {
+                table.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center text-muted">No users found</td>
+                        <td colspan="5" class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <p>No users found</p>
+                        </td>
                     </tr>
-                <% } %>
-            </tbody>
-        </table>
-    </div>
+                `;
+            }
+        }
 
-    <!-- ADMIN USERS -->
-    <div class="card shadow p-3 mb-4">
-        <h3>🛡 Admin Users</h3>
-        <table class="table table-striped table-bordered">
-            <thead>
-                <tr>
-                    <th>UID</th>
-                    <th>UserID</th>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Card No</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% if (adminUsers && adminUsers.length > 0) { %>
-                    <% adminUsers.forEach(admin => { %>
-                        <tr>
-                            <td><%= admin.uid %></td>
-                            <td><%= admin.userId %></td>
-                            <td><%= admin.name %></td>
-                            <td><%= admin.role %></td>
-                            <td><%= admin.cardno %></td>
-                        </tr>
-                    <% }) %>
-                <% } else { %>
+        // Function to populate logs table
+        function populateLogsTable(logs, tableId) {
+            const table = document.getElementById(tableId);
+            table.innerHTML = '';
+            
+            if (logs && logs.length > 0) {
+                // Sort logs by recordTime (newest first)
+                const sortedLogs = logs.sort((a, b) => 
+                    new Date(b.recordTime) - new Date(a.recordTime)
+                );
+                
+                sortedLogs.forEach(log => {
+                    const row = document.createElement('tr');
+                    const recordTime = new Date(log.recordTime);
+                    
+                    row.innerHTML = `
+                        <td>${log.userSn || 'N/A'}</td>
+                        <td>${log.deviceUserId || 'N/A'}</td>
+                        <td>${log.name || 'Unknown'}</td>
+                        <td>${recordTime.toLocaleString()}</td>
+                        <td>${log.deviceIP || log.ip || 'N/A'}</td>
+                        <td><span class="status-badge ${log.type === 'IN' ? 'badge-in' : 'badge-out'}">${log.type || 'N/A'}</span></td>
+                    `;
+                    table.appendChild(row);
+                });
+            } else {
+                table.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center text-muted">No admin found</td>
+                        <td colspan="6" class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <p>No attendance logs available</p>
+                        </td>
                     </tr>
-                <% } %>
-            </tbody>
-        </table>
-    </div>
+                `;
+            }
+        }
 
-    <!-- ATTENDANCE LOGS -->
-    <div class="card shadow p-3 mb-4">
-        <h3>🕒 Attendance Logs</h3>
-        <table class="table table-striped table-bordered">
-            <thead>
-                <tr>
-                    <th>User SN</th>
-                    <th>Device User ID</th>
-                    <th>Record Time</th>
-                    <th>IP Address</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% if (attendanceLogs && attendanceLogs.length > 0) { %>
-                    <% attendanceLogs.forEach(log => { %>
-                        <tr>
-                            <td><%= log.userSn %></td>
-                            <td><%= log.deviceUserId %></td>
-                            <td><%= new Date(log.recordTime).toLocaleString() %></td>
-                            <td><%= log.ip %></td>
-                        </tr>
-                    <% }) %>
-                <% } else { %>
-                    <tr>
-                        <td colspan="4" class="text-center text-muted">No attendance logs available</td>
-                    </tr>
-                <% } %>
-            </tbody>
-        </table>
-    </div>
+        // Function to refresh data
+        async function refreshData() {
+            const refreshBtn = document.querySelector('.refresh-btn');
+            const originalText = refreshBtn.innerHTML;
+            
+            // Show loading state
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Refreshing...';
+            refreshBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/data');
+                allData = await response.json();
+                updateDashboard();
+                
+                // Show success state briefly
+                refreshBtn.innerHTML = '<i class="fas fa-check me-2"></i>Refreshed!';
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                refreshBtn.innerHTML = '<i class="fas fa-times me-2"></i>Error!';
+            } finally {
+                setTimeout(() => {
+                    refreshBtn.innerHTML = originalText;
+                    refreshBtn.disabled = false;
+                }, 1500);
+            }
+        }
 
+        // Initialize the dashboard when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDashboard();
+        });
+    </script>
 </body>
 </html>
