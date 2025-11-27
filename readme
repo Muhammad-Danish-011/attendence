@@ -1,0 +1,22 @@
+1.  Node.js install karein
+
+2. Folder banayein: Desktop\zkteco-attendance
+
+3. Yeh 3 files copy karein: app.js, package.json, auto-start.bat
+
+4. Command Prompt open karein:
+
+cmd
+cd Desktop\zkteco-attendance
+npm install
+npm install -g pm2
+pm2 startup
+
+
+
+
+
+pm2 restart zkteco-service
+pm2 status
+pm2 list
+pm2 stop zkteco-service

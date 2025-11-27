@@ -285,7 +285,44 @@
                 </div>
             </div>
         </div>
-
+        <!-- FILE MANAGEMENT -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(to right, var(--primary), var(--secondary));">
+                <span><i class="fas fa-folder me-2"></i>Saved Data Files</span>
+                <button class="btn btn-sm btn-light" onclick="loadFiles()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-success btn-sm" onclick="saveData()">
+                        <i class="fas fa-save me-1"></i>Save Current Data
+                    </button>
+                    <button class="btn btn-info btn-sm" onclick="loadFiles()">
+                        <i class="fas fa-list me-1"></i>Show All Files
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Size</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="filesTable">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">
+                                    Click "Show All Files" to load saved data files
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
         <!-- DEVICE INFO -->
         <div class="card">
             <div class="card-header" style="background: linear-gradient(to right, var(--primary), var(--secondary));">
@@ -463,224 +500,352 @@
         </div>
     </div>
 
-    <script>
-        // Current active device view
-        let currentDevice = '192.168.18.253';
-        
-        // Initialize with empty data structure
-        let allData = {
-            deviceData: {
-                '192.168.18.253': {
-                    info: {},
-                    allUsers: [],
-                    adminUsers: [],
-                    attendanceLogs: [],
-                    deviceIP: '192.168.18.253',
-                    status: 'offline'
-                },
-                '192.168.18.252': {
-                    info: {},
-                    allUsers: [],
-                    adminUsers: [],
-                    attendanceLogs: [],
-                    deviceIP: '192.168.18.252',
-                    status: 'offline'
-                }
+   <script>
+    // Current active device view
+    let currentDevice = '192.168.18.253';
+    
+    // Initialize with empty data structure
+    let allData = {
+        deviceData: {
+            '192.168.18.253': {
+                info: {},
+                allUsers: [],
+                adminUsers: [],
+                attendanceLogs: [],
+                deviceIP: '192.168.18.253',
+                status: 'offline'
             },
-            combinedData: {
+            '192.168.18.252': {
+                info: {},
+                allUsers: [],
+                adminUsers: [],
+                attendanceLogs: [],
+                deviceIP: '192.168.18.252',
+                status: 'offline'
+            }
+        },
+        combinedData: {
+            info: {},
+            allUsers: [],
+            adminUsers: [],
+            attendanceLogs: []
+        }
+    };
+
+    // Try to get initial data from server, fallback to empty data
+    try {
+        const serverData = JSON.stringify({ deviceData, combinedData });
+        if (serverData && serverData.deviceData) {
+            allData = serverData;
+        }
+    } catch (error) {
+        console.log('Using default data structure');
+    }
+
+    // Function to switch between device views
+    function switchDevice(device) {
+        currentDevice = device;
+        
+        // Update active tab
+        document.querySelectorAll('.device-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        
+        // Update dashboard with selected device data
+        updateDashboard();
+    }
+
+    // Function to update the dashboard with current device data
+    function updateDashboard() {
+        let data;
+        
+        if (currentDevice === 'combined') {
+            data = allData.combinedData;
+            document.getElementById('deviceIP').textContent = 'Multiple Devices';
+            document.getElementById('deviceType').textContent = 'Combined View';
+        } else {
+            data = allData.deviceData[currentDevice];
+            if (data) {
+                document.getElementById('deviceIP').textContent = data.deviceIP;
+                document.getElementById('deviceType').textContent = data.info?.type || 'ZKTeco Device';
+            }
+        }
+
+        if (!data) {
+            data = {
                 info: {},
                 allUsers: [],
                 adminUsers: [],
                 attendanceLogs: []
-            }
-        };
+            };
+        }
 
-        // Try to get initial data from server, fallback to empty data
+        // Separate IN and OUT logs
+        const inLogs = data.attendanceLogs?.filter(log => log.type === 'IN') || [];
+        const outLogs = data.attendanceLogs?.filter(log => log.type === 'OUT') || [];
+        const allLogs = data.attendanceLogs || [];
+
+        // Update stats cards
+        const info = data.info || {};
+        document.getElementById('userCount').textContent = info.userCounts || data.allUsers?.length || 0;
+        document.getElementById('logCount').textContent = allLogs.length;
+        document.getElementById('inLogCount').textContent = inLogs.length;
+        document.getElementById('outLogCount').textContent = outLogs.length;
+        
+        // Update device info details
+        document.getElementById('userCountDetail').textContent = info.userCounts || data.allUsers?.length || 0;
+        document.getElementById('logCountDetail').textContent = allLogs.length;
+        document.getElementById('logCapacityDetail').textContent = (info.logCapacity || 0).toLocaleString();
+        
+        // Update counts in headers
+        document.getElementById('allUsersCount').textContent = data.allUsers?.length || 0;
+        document.getElementById('adminUsersCount').textContent = data.adminUsers?.length || 0;
+        document.getElementById('inLogsCount').textContent = inLogs.length;
+        document.getElementById('outLogsCount').textContent = outLogs.length;
+        document.getElementById('allLogsCount').textContent = allLogs.length;
+        
+        // Populate all users table
+        populateUsersTable(data.allUsers, 'allUsersTable');
+        
+        // Populate admin users table
+        populateUsersTable(data.adminUsers, 'adminUsersTable');
+        
+        // Populate IN logs table
+        populateLogsTable(inLogs, 'inAttendanceLogsTable');
+        
+        // Populate OUT logs table
+        populateLogsTable(outLogs, 'outAttendanceLogsTable');
+        
+        // Populate ALL logs table
+        populateLogsTable(allLogs, 'allAttendanceLogsTable');
+    }
+
+    // Function to populate users table
+    function populateUsersTable(users, tableId) {
+        const table = document.getElementById(tableId);
+        table.innerHTML = '';
+        
+        if (users && users.length > 0) {
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.uid || 'N/A'}</td>
+                    <td>${user.userId || 'N/A'}</td>
+                    <td>${user.name || 'Unknown'}</td>
+                    <td><span class="status-badge ${user.role === 14 ? 'badge-admin' : 'badge-user'}">${user.role === 14 ? 'Admin' : 'User'}</span></td>
+                    <td>${user.cardno || 'N/A'}</td>
+                `;
+                table.appendChild(row);
+            });
+        } else {
+            table.innerHTML = `
+                <tr>
+                    <td colspan="5" class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <p>No users found</p>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // Function to populate logs table
+    function populateLogsTable(logs, tableId) {
+        const table = document.getElementById(tableId);
+        table.innerHTML = '';
+        
+        if (logs && logs.length > 0) {
+            // Sort logs by recordTime (newest first)
+            const sortedLogs = logs.sort((a, b) => 
+                new Date(b.recordTime) - new Date(a.recordTime)
+            );
+            
+            sortedLogs.forEach(log => {
+                const row = document.createElement('tr');
+                const recordTime = new Date(log.recordTime);
+                
+                row.innerHTML = `
+                    <td>${log.userSn || 'N/A'}</td>
+                    <td>${log.deviceUserId || 'N/A'}</td>
+                    <td>${log.name || 'Unknown'}</td>
+                    <td>${recordTime.toLocaleString()}</td>
+                    <td>${log.deviceIP || log.ip || 'N/A'}</td>
+                    <td><span class="status-badge ${log.type === 'IN' ? 'badge-in' : 'badge-out'}">${log.type || 'N/A'}</span></td>
+                `;
+                table.appendChild(row);
+            });
+        } else {
+            table.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <i class="fas fa-clock"></i>
+                        <p>No attendance logs available</p>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // Function to refresh data
+    async function refreshData() {
+        const refreshBtn = document.querySelector('.refresh-btn');
+        const originalText = refreshBtn.innerHTML;
+        
+        // Show loading state
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Refreshing...';
+        refreshBtn.disabled = true;
+        
         try {
-            const serverData = JSON.stringify({ deviceData, combinedData });
-            if (serverData && serverData.deviceData) {
-                allData = serverData;
+            const response = await fetch('/api/data');
+            allData = await response.json();
+            updateDashboard();
+            
+            // Show success state briefly
+            refreshBtn.innerHTML = '<i class="fas fa-check me-2"></i>Refreshed!';
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+            refreshBtn.innerHTML = '<i class="fas fa-times me-2"></i>Error!';
+        } finally {
+            setTimeout(() => {
+                refreshBtn.innerHTML = originalText;
+                refreshBtn.disabled = false;
+            }, 1500);
+        }
+    }
+
+    // FILE MANAGEMENT FUNCTIONS - ये नए functions यहाँ रखें
+
+    // Function to save current data manually
+    async function saveData() {
+        try {
+            const response = await fetch('/api/save', {
+                method: 'POST'
+            });
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert(`Data saved successfully as: ${result.filename}`);
+                loadFiles(); // Refresh the files list
+            } else {
+                alert('Error saving data: ' + result.error);
             }
         } catch (error) {
-            console.log('Using default data structure');
+            console.error('Error saving data:', error);
+            alert('Error saving data');
         }
+    }
 
-        // Function to switch between device views
-        function switchDevice(device) {
-            currentDevice = device;
+    // Function to load and display saved files
+    async function loadFiles() {
+        try {
+            const response = await fetch('/api/files');
+            const files = await response.json();
             
-            // Update active tab
-            document.querySelectorAll('.device-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
+            const filesTable = document.getElementById('filesTable');
             
-            // Update dashboard with selected device data
-            updateDashboard();
-        }
-
-        // Function to update the dashboard with current device data
-        function updateDashboard() {
-            let data;
-            
-            if (currentDevice === 'combined') {
-                data = allData.combinedData;
-                document.getElementById('deviceIP').textContent = 'Multiple Devices';
-                document.getElementById('deviceType').textContent = 'Combined View';
-            } else {
-                data = allData.deviceData[currentDevice];
-                if (data) {
-                    document.getElementById('deviceIP').textContent = data.deviceIP;
-                    document.getElementById('deviceType').textContent = data.info?.type || 'ZKTeco Device';
-                }
-            }
-
-            if (!data) {
-                data = {
-                    info: {},
-                    allUsers: [],
-                    adminUsers: [],
-                    attendanceLogs: []
-                };
-            }
-
-            // Separate IN and OUT logs
-            const inLogs = data.attendanceLogs?.filter(log => log.type === 'IN') || [];
-            const outLogs = data.attendanceLogs?.filter(log => log.type === 'OUT') || [];
-            const allLogs = data.attendanceLogs || [];
-
-            // Update stats cards
-            const info = data.info || {};
-            document.getElementById('userCount').textContent = info.userCounts || data.allUsers?.length || 0;
-            document.getElementById('logCount').textContent = allLogs.length;
-            document.getElementById('inLogCount').textContent = inLogs.length;
-            document.getElementById('outLogCount').textContent = outLogs.length;
-            
-            // Update device info details
-            document.getElementById('userCountDetail').textContent = info.userCounts || data.allUsers?.length || 0;
-            document.getElementById('logCountDetail').textContent = allLogs.length;
-            document.getElementById('logCapacityDetail').textContent = (info.logCapacity || 0).toLocaleString();
-            
-            // Update counts in headers
-            document.getElementById('allUsersCount').textContent = data.allUsers?.length || 0;
-            document.getElementById('adminUsersCount').textContent = data.adminUsers?.length || 0;
-            document.getElementById('inLogsCount').textContent = inLogs.length;
-            document.getElementById('outLogsCount').textContent = outLogs.length;
-            document.getElementById('allLogsCount').textContent = allLogs.length;
-            
-            // Populate all users table
-            populateUsersTable(data.allUsers, 'allUsersTable');
-            
-            // Populate admin users table
-            populateUsersTable(data.adminUsers, 'adminUsersTable');
-            
-            // Populate IN logs table
-            populateLogsTable(inLogs, 'inAttendanceLogsTable');
-            
-            // Populate OUT logs table
-            populateLogsTable(outLogs, 'outAttendanceLogsTable');
-            
-            // Populate ALL logs table
-            populateLogsTable(allLogs, 'allAttendanceLogsTable');
-        }
-
-        // Function to populate users table
-        function populateUsersTable(users, tableId) {
-            const table = document.getElementById(tableId);
-            table.innerHTML = '';
-            
-            if (users && users.length > 0) {
-                users.forEach(user => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${user.uid || 'N/A'}</td>
-                        <td>${user.userId || 'N/A'}</td>
-                        <td>${user.name || 'Unknown'}</td>
-                        <td><span class="status-badge ${user.role === 14 ? 'badge-admin' : 'badge-user'}">${user.role === 14 ? 'Admin' : 'User'}</span></td>
-                        <td>${user.cardno || 'N/A'}</td>
-                    `;
-                    table.appendChild(row);
-                });
-            } else {
-                table.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="empty-state">
-                            <i class="fas fa-users"></i>
-                            <p>No users found</p>
-                        </td>
-                    </tr>
-                `;
-            }
-        }
-
-        // Function to populate logs table
-        function populateLogsTable(logs, tableId) {
-            const table = document.getElementById(tableId);
-            table.innerHTML = '';
-            
-            if (logs && logs.length > 0) {
-                // Sort logs by recordTime (newest first)
-                const sortedLogs = logs.sort((a, b) => 
-                    new Date(b.recordTime) - new Date(a.recordTime)
-                );
+            if (files.length > 0) {
+                filesTable.innerHTML = '';
                 
-                sortedLogs.forEach(log => {
+                files.forEach(file => {
                     const row = document.createElement('tr');
-                    const recordTime = new Date(log.recordTime);
+                    const createdDate = new Date(file.created);
+                    const sizeKB = Math.round(file.size / 1024);
                     
                     row.innerHTML = `
-                        <td>${log.userSn || 'N/A'}</td>
-                        <td>${log.deviceUserId || 'N/A'}</td>
-                        <td>${log.name || 'Unknown'}</td>
-                        <td>${recordTime.toLocaleString()}</td>
-                        <td>${log.deviceIP || log.ip || 'N/A'}</td>
-                        <td><span class="status-badge ${log.type === 'IN' ? 'badge-in' : 'badge-out'}">${log.type || 'N/A'}</span></td>
+                        <td>${file.filename}</td>
+                        <td>${sizeKB} KB</td>
+                        <td>${createdDate.toLocaleString()}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="viewFile('${file.filename}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-success me-1" onclick="loadFileData('${file.filename}')">
+                                <i class="fas fa-upload"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteFile('${file.filename}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
                     `;
-                    table.appendChild(row);
+                    filesTable.appendChild(row);
                 });
             } else {
-                table.innerHTML = `
+                filesTable.innerHTML = `
                     <tr>
-                        <td colspan="6" class="empty-state">
-                            <i class="fas fa-clock"></i>
-                            <p>No attendance logs available</p>
+                        <td colspan="4" class="text-center text-muted">
+                            No saved data files found
                         </td>
                     </tr>
                 `;
             }
+        } catch (error) {
+            console.error('Error loading files:', error);
+            document.getElementById('filesTable').innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-danger">
+                        Error loading files: ${error.message}
+                    </td>
+                </tr>
+            `;
         }
+    }
 
-        // Function to refresh data
-        async function refreshData() {
-            const refreshBtn = document.querySelector('.refresh-btn');
-            const originalText = refreshBtn.innerHTML;
+    // Function to view file content
+    async function viewFile(filename) {
+        try {
+            const response = await fetch(`/api/files/${filename}`);
+            const fileData = await response.json();
             
-            // Show loading state
-            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Refreshing...';
-            refreshBtn.disabled = true;
+            // Show file content in alert (for large data, you might want to use a modal)
+            alert(`File: ${filename}\n\n${JSON.stringify(fileData, null, 2)}`);
+        } catch (error) {
+            console.error('Error viewing file:', error);
+            alert('Error viewing file: ' + error.message);
+        }
+    }
+
+    // Function to load file data into the dashboard
+    async function loadFileData(filename) {
+        try {
+            const response = await fetch(`/api/files/${filename}`);
+            const fileData = await response.json();
             
+            allData = fileData;
+            updateDashboard();
+            alert(`Data from ${filename} loaded successfully!`);
+        } catch (error) {
+            console.error('Error loading file data:', error);
+            alert('Error loading file data: ' + error.message);
+        }
+    }
+
+    // Function to delete a file
+    async function deleteFile(filename) {
+        if (confirm(`Are you sure you want to delete ${filename}?`)) {
             try {
-                const response = await fetch('/api/data');
-                allData = await response.json();
-                updateDashboard();
+                const response = await fetch(`/api/files/${filename}`, {
+                    method: 'DELETE'
+                });
                 
-                // Show success state briefly
-                refreshBtn.innerHTML = '<i class="fas fa-check me-2"></i>Refreshed!';
+                if (response.ok) {
+                    alert('File deleted successfully');
+                    loadFiles(); // Refresh the files list
+                } else {
+                    const result = await response.json();
+                    alert('Error deleting file: ' + result.error);
+                }
             } catch (error) {
-                console.error('Error refreshing data:', error);
-                refreshBtn.innerHTML = '<i class="fas fa-times me-2"></i>Error!';
-            } finally {
-                setTimeout(() => {
-                    refreshBtn.innerHTML = originalText;
-                    refreshBtn.disabled = false;
-                }, 1500);
+                console.error('Error deleting file:', error);
+                alert('Error deleting file: ' + error.message);
             }
         }
+    }
 
-        // Initialize the dashboard when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            updateDashboard();
-        });
-    </script>
+    // Initialize the dashboard when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        updateDashboard();
+    });
+</script>
 </body>
 </html>
