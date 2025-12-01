@@ -6,6 +6,7 @@
     <title>ZKTeco Multi-Device Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary: #4361ee;
@@ -15,6 +16,7 @@
             --dark: #212529;
             --danger: #e63946;
             --warning: #fca311;
+            --info: #3a86ff;
         }
         
         body {
@@ -31,15 +33,34 @@
             border-radius: 0 0 20px 20px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
         
         .card {
             border-radius: 15px;
             border: none;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: all 0.3s ease;
             margin-bottom: 1.5rem;
             overflow: hidden;
+            background: white;
         }
         
         .card:hover {
@@ -52,6 +73,9 @@
             border-bottom: none;
             padding: 1rem 1.5rem;
             font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .card-header-in {
@@ -62,14 +86,44 @@
             background: linear-gradient(to right, #dc3545, #e83e8c);
         }
         
+        .card-header-info {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+        }
+        
+        .card-header-files {
+            background: linear-gradient(to right, #8a2be2, #9370db);
+        }
+        
         .card-body {
             padding: 1.5rem;
+        }
+        
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+        
+        .table-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
         }
         
         table {
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 0;
         }
         
         th {
@@ -78,12 +132,20 @@
             color: var(--dark);
             border: none;
             padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         td {
-            padding: 1rem;
+            padding: 0.75rem 1rem;
             vertical-align: middle;
             border-color: #f0f2f5;
+        }
+        
+        tr:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+            transition: background-color 0.2s ease;
         }
         
         .status-badge {
@@ -91,6 +153,12 @@
             border-radius: 50px;
             font-size: 0.8rem;
             font-weight: 600;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+        
+        .status-badge:hover {
+            transform: scale(1.05);
         }
         
         .badge-in {
@@ -108,44 +176,65 @@
         .badge-admin {
             background-color: rgba(252, 163, 17, 0.2);
             color: var(--warning);
+            border: 1px solid var(--warning);
         }
         
         .badge-user {
             background-color: rgba(67, 97, 238, 0.2);
             color: var(--primary);
+            border: 1px solid var(--primary);
         }
         
         .badge-online {
             background-color: rgba(40, 167, 69, 0.2);
             color: #28a745;
+            border: 1px solid #28a745;
         }
         
         .badge-offline {
             background-color: rgba(220, 53, 69, 0.2);
             color: #dc3545;
+            border: 1px solid #dc3545;
         }
         
         .stats-card {
             text-align: center;
             padding: 1.5rem;
+            background: white;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
         }
         
         .stats-icon {
             font-size: 2.5rem;
             margin-bottom: 1rem;
             color: var(--primary);
+            transition: all 0.3s ease;
+        }
+        
+        .stats-card:hover .stats-icon {
+            transform: scale(1.1);
         }
         
         .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 2.2rem;
+            font-weight: 800;
             color: var(--dark);
             margin-bottom: 0.5rem;
+            font-family: 'Arial Rounded MT Bold', sans-serif;
         }
         
         .stats-label {
             color: #6c757d;
             font-weight: 500;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .refresh-btn {
@@ -155,6 +244,9 @@
             padding: 0.6rem 1.5rem;
             font-weight: 600;
             transition: all 0.3s ease;
+            color: white;
+            position: relative;
+            overflow: hidden;
         }
         
         .refresh-btn:hover {
@@ -162,9 +254,15 @@
             box-shadow: 0 5px 15px rgba(67, 97, 238, 0.4);
         }
         
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+        
         .device-tabs {
             border-bottom: 2px solid #dee2e6;
             margin-bottom: 1.5rem;
+            display: flex;
+            gap: 0.5rem;
         }
         
         .device-tab {
@@ -175,32 +273,183 @@
             color: #6c757d;
             border-bottom: 3px solid transparent;
             transition: all 0.3s ease;
+            border-radius: 8px 8px 0 0;
+            position: relative;
+        }
+        
+        .device-tab:hover {
+            color: var(--primary);
+            background: rgba(67, 97, 238, 0.05);
         }
         
         .device-tab.active {
             color: var(--primary);
             border-bottom: 3px solid var(--primary);
+            background: rgba(67, 97, 238, 0.1);
         }
         
-        .device-tab:hover {
-            color: var(--primary);
+        .device-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 3px;
         }
         
         .empty-state {
             text-align: center;
-            padding: 2rem;
+            padding: 3rem 2rem;
             color: #6c757d;
         }
         
         .empty-state i {
-            font-size: 3rem;
+            font-size: 4rem;
             margin-bottom: 1rem;
             color: #dee2e6;
+            opacity: 0.5;
         }
         
         .log-count-badge {
             font-size: 0.9rem;
             padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+        }
+        
+        .search-box {
+            padding: 0.5rem 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 50px;
+            margin-bottom: 1rem;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+        
+        .time-display {
+            font-size: 0.9rem;
+            color: #6c757d;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            display: inline-block;
+        }
+        
+        .floating-action-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .floating-action-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            display: none;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+            z-index: 1001;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast.success {
+            border-left: 4px solid #28a745;
+        }
+        
+        .toast.error {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .toast.info {
+            border-left: 4px solid var(--primary);
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9998;
+            display: none;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
         }
         
         @media (max-width: 768px) {
@@ -210,21 +459,122 @@
             
             th, td {
                 padding: 0.75rem 0.5rem;
+                font-size: 0.9rem;
             }
+            
+            .device-tabs {
+                flex-wrap: wrap;
+            }
+            
+            .device-tab {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            .stats-number {
+                font-size: 1.8rem;
+            }
+        }
+        
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding: 1rem;
+        }
+        
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #dee2e6;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .page-btn:hover:not(:disabled) {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .page-info {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .filter-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #dee2e6;
+            background: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+        
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .filter-btn:hover {
+            transform: translateY(-1px);
         }
     </style>
 </head>
 
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle text-success"></i>
+        <span id="toastMessage">Operation completed successfully!</span>
+    </div>
+
+    <!-- File View Modal -->
+    <div class="modal-overlay" id="fileModal">
+        <div class="modal-content">
+            <h4><i class="fas fa-file me-2"></i>File Content</h4>
+            <div class="mt-3">
+                <pre id="fileContent" style="max-height: 60vh; overflow-y: auto; background: #f8f9fa; padding: 1rem; border-radius: 5px;"></pre>
+            </div>
+            <button class="btn btn-secondary mt-3" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
     <div class="dashboard-header">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1 class="mb-2"><i class="fas fa-fingerprint me-2"></i>ZKTeco Multi-Device Dashboard</h1>
                     <p class="mb-0">Real-time data from your biometric devices</p>
+                    <div class="time-display mt-2">
+                        <i class="fas fa-clock me-1"></i>
+                        <span id="currentTime">Loading...</span>
+                    </div>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-light refresh-btn" onclick="refreshData()">
+                    <button class="btn btn-light refresh-btn" onclick="refreshData()" id="refreshBtn">
                         <i class="fas fa-sync-alt me-2"></i>Refresh Data
                     </button>
                 </div>
@@ -285,63 +635,30 @@
                 </div>
             </div>
         </div>
-        <!-- FILE MANAGEMENT -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(to right, var(--primary), var(--secondary));">
-                <span><i class="fas fa-folder me-2"></i>Saved Data Files</span>
-                <button class="btn btn-sm btn-light" onclick="loadFiles()">
-                    <i class="fas fa-sync-alt me-1"></i>Refresh
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="d-flex gap-2 mb-3">
-                    <button class="btn btn-success btn-sm" onclick="saveData()">
-                        <i class="fas fa-save me-1"></i>Save Current Data
-                    </button>
-                    <button class="btn btn-info btn-sm" onclick="loadFiles()">
-                        <i class="fas fa-list me-1"></i>Show All Files
-                    </button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Filename</th>
-                                <th>Size</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="filesTable">
-                            <tr>
-                                <td colspan="4" class="text-center text-muted">
-                                    Click "Show All Files" to load saved data files
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+
         <!-- DEVICE INFO -->
         <div class="card">
-            <div class="card-header" style="background: linear-gradient(to right, var(--primary), var(--secondary));">
+            <div class="card-header card-header-info">
                 <i class="fas fa-info-circle me-2"></i>Device Information
+                <span class="badge bg-light text-dark rounded-pill">
+                    <i class="fas fa-satellite-dish me-1"></i>
+                    <span id="deviceStatus">Connected</span>
+                </span>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
                         <table class="table table-borderless">
                             <tr>
-                                <th width="40%">Device Type</th>
+                                <th width="40%"><i class="fas fa-microchip me-2"></i>Device Type</th>
                                 <td id="deviceType">ZKTeco BioAttendance</td>
                             </tr>
                             <tr>
-                                <th>IP Address</th>
+                                <th><i class="fas fa-network-wired me-2"></i>IP Address</th>
                                 <td id="deviceIP">192.168.18.253</td>
                             </tr>
                             <tr>
-                                <th>Port</th>
+                                <th><i class="fas fa-plug me-2"></i>Port</th>
                                 <td>4370</td>
                             </tr>
                         </table>
@@ -349,15 +666,15 @@
                     <div class="col-md-6">
                         <table class="table table-borderless">
                             <tr>
-                                <th width="40%">User Count</th>
+                                <th width="40%"><i class="fas fa-user-friends me-2"></i>User Count</th>
                                 <td id="userCountDetail">0</td>
                             </tr>
                             <tr>
-                                <th>Log Count</th>
+                                <th><i class="fas fa-history me-2"></i>Log Count</th>
                                 <td id="logCountDetail">0</td>
                             </tr>
                             <tr>
-                                <th>Log Capacity</th>
+                                <th><i class="fas fa-database me-2"></i>Log Capacity</th>
                                 <td id="logCapacityDetail">0</td>
                             </tr>
                         </table>
@@ -366,52 +683,135 @@
             </div>
         </div>
 
-        <!-- ALL USERS -->
+        <!-- FILE MANAGEMENT -->
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(to right, var(--primary), var(--secondary));">
-                <span><i class="fas fa-users me-2"></i>All Users</span>
-                <span class="badge bg-light text-dark rounded-pill log-count-badge" id="allUsersCount">0</span>
+            <div class="card-header card-header-files">
+                <span><i class="fas fa-folder me-2"></i>Saved Data Files</span>
+                <button class="btn btn-sm btn-light" onclick="loadFiles()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
             </div>
             <div class="card-body">
+                <div class="d-flex gap-2 mb-3 flex-wrap">
+                    <button class="btn btn-success btn-sm" onclick="saveData()">
+                        <i class="fas fa-save me-1"></i>Save Current Data
+                    </button>
+                    <button class="btn btn-info btn-sm" onclick="loadFiles()">
+                        <i class="fas fa-list me-1"></i>Show All Files
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="clearLocalData()">
+                        <i class="fas fa-trash-alt me-1"></i>Clear Local Data
+                    </button>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>UID</th>
-                                <th>UserID</th>
-                                <th>Name</th>
-                                <th>Role</th>
-                                <th>Card No</th>
+                                <th><i class="fas fa-file me-1"></i>Filename</th>
+                                <th><i class="fas fa-weight me-1"></i>Size</th>
+                                <th><i class="fas fa-calendar-plus me-1"></i>Created</th>
+                                <th><i class="fas fa-cogs me-1"></i>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="allUsersTable">
-                            <!-- Data will be populated by JavaScript -->
+                        <tbody id="filesTable">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">
+                                    <i class="fas fa-folder-open me-2"></i>
+                                    Click "Show All Files" to load saved data files
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
+        <!-- Search and Filter Controls -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <input type="text" class="search-box" id="searchBox" placeholder="Search in tables..." onkeyup="filterTables()">
+                    </div>
+                    <div class="col-md-6">
+                        <div class="filter-controls">
+                            <button class="filter-btn active" onclick="filterByType('all')">
+                                <i class="fas fa-list me-1"></i>All
+                            </button>
+                            <button class="filter-btn" onclick="filterByType('IN')">
+                                <i class="fas fa-sign-in-alt me-1"></i>IN Only
+                            </button>
+                            <button class="filter-btn" onclick="filterByType('OUT')">
+                                <i class="fas fa-sign-out-alt me-1"></i>OUT Only
+                            </button>
+                            <button class="filter-btn" onclick="filterByDate('today')">
+                                <i class="fas fa-calendar-day me-1"></i>Today
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALL USERS -->
+        <div class="card">
+            <div class="card-header card-header-info">
+                <span><i class="fas fa-users me-2"></i>All Users</span>
+                <span class="badge bg-light text-dark rounded-pill log-count-badge" id="allUsersCount">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-hashtag me-1"></i>UID</th>
+                                <th><i class="fas fa-id-card me-1"></i>UserID</th>
+                                <th><i class="fas fa-user me-1"></i>Name</th>
+                                <th><i class="fas fa-user-tag me-1"></i>Role</th>
+                                <th><i class="fas fa-credit-card me-1"></i>Card No</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allUsersTable">
+                            <tr>
+                                <td colspan="5" class="empty-state">
+                                    <i class="fas fa-users"></i>
+                                    <p>No users found</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-controls" id="allUsersPagination">
+                    <!-- Pagination will be added here -->
+                </div>
+            </div>
+        </div>
+
         <!-- ADMIN USERS -->
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(to right, var(--primary), var(--secondary));">
+            <div class="card-header card-header-info">
                 <span><i class="fas fa-user-shield me-2"></i>Admin Users</span>
                 <span class="badge bg-warning rounded-pill log-count-badge" id="adminUsersCount">0</span>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
+                <div class="table-container">
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>UID</th>
-                                <th>UserID</th>
-                                <th>Name</th>
-                                <th>Role</th>
-                                <th>Card No</th>
+                                <th><i class="fas fa-hashtag me-1"></i>UID</th>
+                                <th><i class="fas fa-id-card me-1"></i>UserID</th>
+                                <th><i class="fas fa-user me-1"></i>Name</th>
+                                <th><i class="fas fa-user-tag me-1"></i>Role</th>
+                                <th><i class="fas fa-credit-card me-1"></i>Card No</th>
                             </tr>
                         </thead>
                         <tbody id="adminUsersTable">
-                            <!-- Data will be populated by JavaScript -->
+                            <tr>
+                                <td colspan="5" class="empty-state">
+                                    <i class="fas fa-user-shield"></i>
+                                    <p>No admin users found</p>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -420,432 +820,694 @@
 
         <!-- IN ATTENDANCE LOGS -->
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center card-header-in">
+            <div class="card-header card-header-in">
                 <span><i class="fas fa-sign-in-alt me-2"></i>IN Attendance Logs</span>
                 <span class="badge bg-light text-success rounded-pill log-count-badge" id="inLogsCount">0</span>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
+                <div class="table-container">
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>User SN</th>
-                                <th>Device User ID</th>
-                                <th>Name</th>
-                                <th>Record Time</th>
-                                <th>IP Address</th>
-                                <th>Type</th>
+                                <th><i class="fas fa-hashtag me-1"></i>User SN</th>
+                                <th><i class="fas fa-id-badge me-1"></i>Device User ID</th>
+                                <th><i class="fas fa-user me-1"></i>Name</th>
+                                <th><i class="fas fa-clock me-1"></i>Record Time</th>
+                                <th><i class="fas fa-network-wired me-1"></i>IP Address</th>
+                                <th><i class="fas fa-tag me-1"></i>Type</th>
                             </tr>
                         </thead>
                         <tbody id="inAttendanceLogsTable">
-                            <!-- Data will be populated by JavaScript -->
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                    <p>No IN attendance logs available</p>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls" id="inLogsPagination">
+                    <!-- Pagination will be added here -->
                 </div>
             </div>
         </div>
 
         <!-- OUT ATTENDANCE LOGS -->
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center card-header-out">
+            <div class="card-header card-header-out">
                 <span><i class="fas fa-sign-out-alt me-2"></i>OUT Attendance Logs</span>
                 <span class="badge bg-light text-danger rounded-pill log-count-badge" id="outLogsCount">0</span>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
+                <div class="table-container">
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>User SN</th>
-                                <th>Device User ID</th>
-                                <th>Name</th>
-                                <th>Record Time</th>
-                                <th>IP Address</th>
-                                <th>Type</th>
+                                <th><i class="fas fa-hashtag me-1"></i>User SN</th>
+                                <th><i class="fas fa-id-badge me-1"></i>Device User ID</th>
+                                <th><i class="fas fa-user me-1"></i>Name</th>
+                                <th><i class="fas fa-clock me-1"></i>Record Time</th>
+                                <th><i class="fas fa-network-wired me-1"></i>IP Address</th>
+                                <th><i class="fas fa-tag me-1"></i>Type</th>
                             </tr>
                         </thead>
                         <tbody id="outAttendanceLogsTable">
-                            <!-- Data will be populated by JavaScript -->
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <p>No OUT attendance logs available</p>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls" id="outLogsPagination">
+                    <!-- Pagination will be added here -->
                 </div>
             </div>
         </div>
 
         <!-- ALL ATTENDANCE LOGS (Combined) -->
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(to right, var(--primary), var(--secondary));">
+            <div class="card-header card-header-info">
                 <span><i class="fas fa-clock me-2"></i>All Attendance Logs</span>
                 <span class="badge bg-light text-dark rounded-pill log-count-badge" id="allLogsCount">0</span>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
+                <div class="table-container">
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>User SN</th>
-                                <th>Device User ID</th>
-                                <th>Name</th>
-                                <th>Record Time</th>
-                                <th>IP Address</th>
-                                <th>Type</th>
+                                <th><i class="fas fa-hashtag me-1"></i>User SN</th>
+                                <th><i class="fas fa-id-badge me-1"></i>Device User ID</th>
+                                <th><i class="fas fa-user me-1"></i>Name</th>
+                                <th><i class="fas fa-clock me-1"></i>Record Time</th>
+                                <th><i class="fas fa-network-wired me-1"></i>IP Address</th>
+                                <th><i class="fas fa-tag me-1"></i>Type</th>
                             </tr>
                         </thead>
                         <tbody id="allAttendanceLogsTable">
-                            <!-- Data will be populated by JavaScript -->
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <i class="fas fa-clock"></i>
+                                    <p>No attendance logs available</p>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls" id="allLogsPagination">
+                    <!-- Pagination will be added here -->
                 </div>
             </div>
         </div>
     </div>
 
-   <script>
-    // Current active device view
-    let currentDevice = '192.168.18.253';
-    
-    // Initialize with empty data structure
-    let allData = {
-        deviceData: {
-            '192.168.18.253': {
-                info: {},
-                allUsers: [],
-                adminUsers: [],
-                attendanceLogs: [],
-                deviceIP: '192.168.18.253',
-                status: 'offline'
+    <!-- Floating Action Button -->
+    <button class="floating-action-btn" onclick="scrollToTop()" id="fab">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script>
+        // Global Variables
+        let currentDevice = '192.168.18.253';
+        let allData = {
+            deviceData: {
+                '192.168.18.253': {
+                    info: {},
+                    allUsers: [],
+                    adminUsers: [],
+                    attendanceLogs: [],
+                    deviceIP: '192.168.18.253',
+                    status: 'offline'
+                },
+                '192.168.18.252': {
+                    info: {},
+                    allUsers: [],
+                    adminUsers: [],
+                    attendanceLogs: [],
+                    deviceIP: '192.168.18.252',
+                    status: 'offline'
+                }
             },
-            '192.168.18.252': {
-                info: {},
-                allUsers: [],
-                adminUsers: [],
-                attendanceLogs: [],
-                deviceIP: '192.168.18.252',
-                status: 'offline'
-            }
-        },
-        combinedData: {
-            info: {},
-            allUsers: [],
-            adminUsers: [],
-            attendanceLogs: []
-        }
-    };
-
-    // Try to get initial data from server, fallback to empty data
-    try {
-        const serverData = JSON.stringify({ deviceData, combinedData });
-        if (serverData && serverData.deviceData) {
-            allData = serverData;
-        }
-    } catch (error) {
-        console.log('Using default data structure');
-    }
-
-    // Function to switch between device views
-    function switchDevice(device) {
-        currentDevice = device;
-        
-        // Update active tab
-        document.querySelectorAll('.device-tab').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        event.target.classList.add('active');
-        
-        // Update dashboard with selected device data
-        updateDashboard();
-    }
-
-    // Function to update the dashboard with current device data
-    function updateDashboard() {
-        let data;
-        
-        if (currentDevice === 'combined') {
-            data = allData.combinedData;
-            document.getElementById('deviceIP').textContent = 'Multiple Devices';
-            document.getElementById('deviceType').textContent = 'Combined View';
-        } else {
-            data = allData.deviceData[currentDevice];
-            if (data) {
-                document.getElementById('deviceIP').textContent = data.deviceIP;
-                document.getElementById('deviceType').textContent = data.info?.type || 'ZKTeco Device';
-            }
-        }
-
-        if (!data) {
-            data = {
+            combinedData: {
                 info: {},
                 allUsers: [],
                 adminUsers: [],
                 attendanceLogs: []
-            };
-        }
-
-        // Separate IN and OUT logs
-        const inLogs = data.attendanceLogs?.filter(log => log.type === 'IN') || [];
-        const outLogs = data.attendanceLogs?.filter(log => log.type === 'OUT') || [];
-        const allLogs = data.attendanceLogs || [];
-
-        // Update stats cards
-        const info = data.info || {};
-        document.getElementById('userCount').textContent = info.userCounts || data.allUsers?.length || 0;
-        document.getElementById('logCount').textContent = allLogs.length;
-        document.getElementById('inLogCount').textContent = inLogs.length;
-        document.getElementById('outLogCount').textContent = outLogs.length;
-        
-        // Update device info details
-        document.getElementById('userCountDetail').textContent = info.userCounts || data.allUsers?.length || 0;
-        document.getElementById('logCountDetail').textContent = allLogs.length;
-        document.getElementById('logCapacityDetail').textContent = (info.logCapacity || 0).toLocaleString();
-        
-        // Update counts in headers
-        document.getElementById('allUsersCount').textContent = data.allUsers?.length || 0;
-        document.getElementById('adminUsersCount').textContent = data.adminUsers?.length || 0;
-        document.getElementById('inLogsCount').textContent = inLogs.length;
-        document.getElementById('outLogsCount').textContent = outLogs.length;
-        document.getElementById('allLogsCount').textContent = allLogs.length;
-        
-        // Populate all users table
-        populateUsersTable(data.allUsers, 'allUsersTable');
-        
-        // Populate admin users table
-        populateUsersTable(data.adminUsers, 'adminUsersTable');
-        
-        // Populate IN logs table
-        populateLogsTable(inLogs, 'inAttendanceLogsTable');
-        
-        // Populate OUT logs table
-        populateLogsTable(outLogs, 'outAttendanceLogsTable');
-        
-        // Populate ALL logs table
-        populateLogsTable(allLogs, 'allAttendanceLogsTable');
-    }
-
-    // Function to populate users table
-    function populateUsersTable(users, tableId) {
-        const table = document.getElementById(tableId);
-        table.innerHTML = '';
-        
-        if (users && users.length > 0) {
-            users.forEach(user => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${user.uid || 'N/A'}</td>
-                    <td>${user.userId || 'N/A'}</td>
-                    <td>${user.name || 'Unknown'}</td>
-                    <td><span class="status-badge ${user.role === 14 ? 'badge-admin' : 'badge-user'}">${user.role === 14 ? 'Admin' : 'User'}</span></td>
-                    <td>${user.cardno || 'N/A'}</td>
-                `;
-                table.appendChild(row);
-            });
-        } else {
-            table.innerHTML = `
-                <tr>
-                    <td colspan="5" class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <p>No users found</p>
-                    </td>
-                </tr>
-            `;
-        }
-    }
-
-    // Function to populate logs table
-    function populateLogsTable(logs, tableId) {
-        const table = document.getElementById(tableId);
-        table.innerHTML = '';
-        
-        if (logs && logs.length > 0) {
-            // Sort logs by recordTime (newest first)
-            const sortedLogs = logs.sort((a, b) => 
-                new Date(b.recordTime) - new Date(a.recordTime)
-            );
-            
-            sortedLogs.forEach(log => {
-                const row = document.createElement('tr');
-                const recordTime = new Date(log.recordTime);
-                
-                row.innerHTML = `
-                    <td>${log.userSn || 'N/A'}</td>
-                    <td>${log.deviceUserId || 'N/A'}</td>
-                    <td>${log.name || 'Unknown'}</td>
-                    <td>${recordTime.toLocaleString()}</td>
-                    <td>${log.deviceIP || log.ip || 'N/A'}</td>
-                    <td><span class="status-badge ${log.type === 'IN' ? 'badge-in' : 'badge-out'}">${log.type || 'N/A'}</span></td>
-                `;
-                table.appendChild(row);
-            });
-        } else {
-            table.innerHTML = `
-                <tr>
-                    <td colspan="6" class="empty-state">
-                        <i class="fas fa-clock"></i>
-                        <p>No attendance logs available</p>
-                    </td>
-                </tr>
-            `;
-        }
-    }
-
-    // Function to refresh data
-    async function refreshData() {
-        const refreshBtn = document.querySelector('.refresh-btn');
-        const originalText = refreshBtn.innerHTML;
-        
-        // Show loading state
-        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Refreshing...';
-        refreshBtn.disabled = true;
-        
-        try {
-            const response = await fetch('/api/data');
-            allData = await response.json();
-            updateDashboard();
-            
-            // Show success state briefly
-            refreshBtn.innerHTML = '<i class="fas fa-check me-2"></i>Refreshed!';
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-            refreshBtn.innerHTML = '<i class="fas fa-times me-2"></i>Error!';
-        } finally {
-            setTimeout(() => {
-                refreshBtn.innerHTML = originalText;
-                refreshBtn.disabled = false;
-            }, 1500);
-        }
-    }
-
-    // FILE MANAGEMENT FUNCTIONS - ये नए functions यहाँ रखें
-
-    // Function to save current data manually
-    async function saveData() {
-        try {
-            const response = await fetch('/api/save', {
-                method: 'POST'
-            });
-            const result = await response.json();
-            
-            if (response.ok) {
-                alert(`Data saved successfully as: ${result.filename}`);
-                loadFiles(); // Refresh the files list
-            } else {
-                alert('Error saving data: ' + result.error);
             }
-        } catch (error) {
-            console.error('Error saving data:', error);
-            alert('Error saving data');
-        }
-    }
+        };
 
-    // Function to load and display saved files
-    async function loadFiles() {
-        try {
-            const response = await fetch('/api/files');
-            const files = await response.json();
+        // Pagination variables
+        const ITEMS_PER_PAGE = {
+            users: 10,
+            logs: 15
+        };
+        let currentPage = {
+            allUsers: 1,
+            inLogs: 1,
+            outLogs: 1,
+            allLogs: 1
+        };
+
+        // UI Helper Functions
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
             
-            const filesTable = document.getElementById('filesTable');
+            toastMessage.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
             
-            if (files.length > 0) {
-                filesTable.innerHTML = '';
-                
-                files.forEach(file => {
-                    const row = document.createElement('tr');
-                    const createdDate = new Date(file.created);
-                    const sizeKB = Math.round(file.size / 1024);
-                    
-                    row.innerHTML = `
-                        <td>${file.filename}</td>
-                        <td>${sizeKB} KB</td>
-                        <td>${createdDate.toLocaleString()}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="viewFile('${file.filename}')">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-success me-1" onclick="loadFileData('${file.filename}')">
-                                <i class="fas fa-upload"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteFile('${file.filename}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                    filesTable.appendChild(row);
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function showModal(content) {
+            document.getElementById('fileContent').textContent = content;
+            document.getElementById('fileModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('fileModal').style.display = 'none';
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateCurrentTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleString('en-IN', { 
+                    timeZone: 'Asia/Kolkata',
+                    hour12: true,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
                 });
+        }
+
+        // Initialize time update
+        setInterval(updateCurrentTime, 1000);
+        updateCurrentTime();
+
+        // Show/Hide Floating Action Button
+        window.addEventListener('scroll', () => {
+            const fab = document.getElementById('fab');
+            if (window.scrollY > 300) {
+                fab.style.display = 'flex';
             } else {
-                filesTable.innerHTML = `
+                fab.style.display = 'none';
+            }
+        });
+
+        // Device Switching
+        function switchDevice(device) {
+            currentDevice = device;
+            
+            // Update active tab
+            document.querySelectorAll('.device-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Reset pagination
+            currentPage = {
+                allUsers: 1,
+                inLogs: 1,
+                outLogs: 1,
+                allLogs: 1
+            };
+            
+            updateDashboard();
+        }
+
+        // Update Dashboard
+        function updateDashboard() {
+            let data;
+            
+            if (currentDevice === 'combined') {
+                data = allData.combinedData || {};
+                document.getElementById('deviceIP').textContent = 'Multiple Devices';
+                document.getElementById('deviceType').textContent = 'Combined View';
+            } else {
+                data = allData.deviceData?.[currentDevice] || {};
+                document.getElementById('deviceIP').textContent = data.deviceIP || currentDevice;
+                document.getElementById('deviceType').textContent = data.info?.type || 'ZKTeco Device';
+                document.getElementById('deviceStatus').textContent = data.status === 'online' ? 'Connected' : 'Disconnected';
+            }
+
+            // Separate IN and OUT logs
+            const inLogs = data.attendanceLogs?.filter(log => log.type === 'IN') || [];
+            const outLogs = data.attendanceLogs?.filter(log => log.type === 'OUT') || [];
+            const allLogs = data.attendanceLogs || [];
+
+            // Update stats cards
+            document.getElementById('userCount').textContent = data.allUsers?.length || 0;
+            document.getElementById('logCount').textContent = allLogs.length;
+            document.getElementById('inLogCount').textContent = inLogs.length;
+            document.getElementById('outLogCount').textContent = outLogs.length;
+            
+            // Update device info details
+            document.getElementById('userCountDetail').textContent = data.allUsers?.length || 0;
+            document.getElementById('logCountDetail').textContent = allLogs.length;
+            document.getElementById('logCapacityDetail').textContent = (data.info?.logCapacity || 0).toLocaleString();
+            
+            // Update counts in headers
+            document.getElementById('allUsersCount').textContent = data.allUsers?.length || 0;
+            document.getElementById('adminUsersCount').textContent = data.adminUsers?.length || 0;
+            document.getElementById('inLogsCount').textContent = inLogs.length;
+            document.getElementById('outLogsCount').textContent = outLogs.length;
+            document.getElementById('allLogsCount').textContent = allLogs.length;
+            
+            // Populate tables
+            populateUsersTable(data.allUsers || [], 'allUsersTable', 'allUsers', 'allUsersPagination');
+            populateUsersTable(data.adminUsers || [], 'adminUsersTable');
+            populateLogsTable(inLogs, 'inAttendanceLogsTable', 'inLogs', 'inLogsPagination');
+            populateLogsTable(outLogs, 'outAttendanceLogsTable', 'outLogs', 'outLogsPagination');
+            populateLogsTable(allLogs, 'allAttendanceLogsTable', 'allLogs', 'allLogsPagination');
+        }
+
+        // Populate Users Table with Pagination
+        function populateUsersTable(users, tableId, pageKey = null, paginationId = null) {
+            const table = document.getElementById(tableId);
+            table.innerHTML = '';
+            
+            if (users && users.length > 0) {
+                let sortedUsers = users.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                
+                // Apply pagination if pageKey is provided
+                if (pageKey && paginationId) {
+                    const page = currentPage[pageKey] || 1;
+                    const startIndex = (page - 1) * ITEMS_PER_PAGE.users;
+                    const endIndex = startIndex + ITEMS_PER_PAGE.users;
+                    const paginatedUsers = sortedUsers.slice(startIndex, endIndex);
+                    
+                    paginatedUsers.forEach(user => {
+                        table.appendChild(createUserRow(user));
+                    });
+                    
+                    // Add pagination controls
+                    createPagination(sortedUsers.length, pageKey, paginationId, ITEMS_PER_PAGE.users);
+                } else {
+                    // Show all users for admin table
+                    sortedUsers.forEach(user => {
+                        table.appendChild(createUserRow(user));
+                    });
+                }
+            } else {
+                table.innerHTML = `
                     <tr>
-                        <td colspan="4" class="text-center text-muted">
-                            No saved data files found
+                        <td colspan="5" class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <p>No users found</p>
                         </td>
                     </tr>
                 `;
+                if (paginationId) {
+                    document.getElementById(paginationId).innerHTML = '';
+                }
             }
-        } catch (error) {
-            console.error('Error loading files:', error);
-            document.getElementById('filesTable').innerHTML = `
-                <tr>
-                    <td colspan="4" class="text-center text-danger">
-                        Error loading files: ${error.message}
-                    </td>
-                </tr>
+        }
+
+        function createUserRow(user) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.uid || 'N/A'}</td>
+                <td>${user.userId || 'N/A'}</td>
+                <td>${user.name || 'Unknown'}</td>
+                <td><span class="status-badge ${user.role === 14 ? 'badge-admin' : 'badge-user'}">${user.role === 14 ? 'Admin' : 'User'}</span></td>
+                <td>${user.cardno || 'N/A'}</td>
             `;
+            return row;
         }
-    }
 
-    // Function to view file content
-    async function viewFile(filename) {
-        try {
-            const response = await fetch(`/api/files/${filename}`);
-            const fileData = await response.json();
+        // Populate Logs Table with Pagination
+        function populateLogsTable(logs, tableId, pageKey = null, paginationId = null) {
+            const table = document.getElementById(tableId);
+            table.innerHTML = '';
             
-            // Show file content in alert (for large data, you might want to use a modal)
-            alert(`File: ${filename}\n\n${JSON.stringify(fileData, null, 2)}`);
-        } catch (error) {
-            console.error('Error viewing file:', error);
-            alert('Error viewing file: ' + error.message);
+            if (logs && logs.length > 0) {
+                let sortedLogs = logs.sort((a, b) => new Date(b.recordTime) - new Date(a.recordTime));
+                
+                // Apply pagination if pageKey is provided
+                if (pageKey && paginationId) {
+                    const page = currentPage[pageKey] || 1;
+                    const startIndex = (page - 1) * ITEMS_PER_PAGE.logs;
+                    const endIndex = startIndex + ITEMS_PER_PAGE.logs;
+                    const paginatedLogs = sortedLogs.slice(startIndex, endIndex);
+                    
+                    paginatedLogs.forEach(log => {
+                        table.appendChild(createLogRow(log));
+                    });
+                    
+                    // Add pagination controls
+                    createPagination(sortedLogs.length, pageKey, paginationId, ITEMS_PER_PAGE.logs);
+                } else {
+                    sortedLogs.forEach(log => {
+                        table.appendChild(createLogRow(log));
+                    });
+                }
+            } else {
+                table.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <p>No attendance logs available</p>
+                        </td>
+                    </tr>
+                `;
+                if (paginationId) {
+                    document.getElementById(paginationId).innerHTML = '';
+                }
+            }
         }
-    }
 
-    // Function to load file data into the dashboard
-    async function loadFileData(filename) {
-        try {
-            const response = await fetch(`/api/files/${filename}`);
-            const fileData = await response.json();
+        function createLogRow(log) {
+            const row = document.createElement('tr');
+            const recordTime = new Date(log.recordTime);
             
-            allData = fileData;
+            row.innerHTML = `
+                <td>${log.userSn || 'N/A'}</td>
+                <td>${log.deviceUserId || 'N/A'}</td>
+                <td>${log.name || 'Unknown'}</td>
+                <td>${recordTime.toLocaleString()}</td>
+                <td>${log.deviceIP || log.ip || 'N/A'}</td>
+                <td><span class="status-badge ${log.type === 'IN' ? 'badge-in' : 'badge-out'}">${log.type || 'N/A'}</span></td>
+            `;
+            return row;
+        }
+
+        // Create Pagination Controls
+        function createPagination(totalItems, pageKey, paginationId, itemsPerPage) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const current = currentPage[pageKey] || 1;
+            
+            if (totalPages <= 1) {
+                document.getElementById(paginationId).innerHTML = '';
+                return;
+            }
+            
+            let paginationHTML = `
+                <button class="page-btn" onclick="changePage('${pageKey}', 1)" ${current === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-angle-double-left"></i>
+                </button>
+                <button class="page-btn" onclick="changePage('${pageKey}', ${current - 1})" ${current === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-angle-left"></i>
+                </button>
+                <span class="page-info">Page ${current} of ${totalPages}</span>
+                <button class="page-btn" onclick="changePage('${pageKey}', ${current + 1})" ${current === totalPages ? 'disabled' : ''}>
+                    <i class="fas fa-angle-right"></i>
+                </button>
+                <button class="page-btn" onclick="changePage('${pageKey}', ${totalPages})" ${current === totalPages ? 'disabled' : ''}>
+                    <i class="fas fa-angle-double-right"></i>
+                </button>
+            `;
+            
+            document.getElementById(paginationId).innerHTML = paginationHTML;
+        }
+
+        function changePage(pageKey, newPage) {
+            currentPage[pageKey] = newPage;
             updateDashboard();
-            alert(`Data from ${filename} loaded successfully!`);
-        } catch (error) {
-            console.error('Error loading file data:', error);
-            alert('Error loading file data: ' + error.message);
         }
-    }
 
-    // Function to delete a file
-    async function deleteFile(filename) {
-        if (confirm(`Are you sure you want to delete ${filename}?`)) {
+        // Search and Filter Functions
+        function filterTables() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            
+            // Get all tables
+            const tables = [
+                'allUsersTable', 'adminUsersTable', 
+                'inAttendanceLogsTable', 'outAttendanceLogsTable', 
+                'allAttendanceLogsTable'
+            ];
+            
+            tables.forEach(tableId => {
+                const table = document.getElementById(tableId);
+                const rows = table.getElementsByTagName('tr');
+                
+                for (let i = 0; i < rows.length; i++) {
+                    const cells = rows[i].getElementsByTagName('td');
+                    let found = false;
+                    
+                    for (let j = 0; j < cells.length; j++) {
+                        if (cells[j].textContent.toLowerCase().includes(searchTerm)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    
+                    rows[i].style.display = found ? '' : 'none';
+                }
+            });
+        }
+
+        function filterByType(type) {
+            // Update filter button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Implement filtering logic based on type
+            // This would require additional logic to filter the data
+            showToast(`Filtered by: ${type}`, 'info');
+        }
+
+        function filterByDate(range) {
+            showToast(`Filtered by date: ${range}`, 'info');
+        }
+
+        // Refresh Data
+        async function refreshData() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const originalText = refreshBtn.innerHTML;
+            
+            // Show loading state
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Refreshing...';
+            refreshBtn.disabled = true;
+            showLoading(true);
+            
             try {
-                const response = await fetch(`/api/files/${filename}`, {
-                    method: 'DELETE'
-                });
+                const response = await fetch('/api/data');
+                allData = await response.json();
+                updateDashboard();
+                
+                showToast('Data refreshed successfully!', 'success');
+                refreshBtn.innerHTML = '<i class="fas fa-check me-2"></i>Refreshed!';
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                showToast('Error refreshing data!', 'error');
+                refreshBtn.innerHTML = '<i class="fas fa-times me-2"></i>Error!';
+            } finally {
+                setTimeout(() => {
+                    refreshBtn.innerHTML = originalText;
+                    refreshBtn.disabled = false;
+                    showLoading(false);
+                }, 1000);
+            }
+        }
+
+        // File Management Functions
+        async function saveData() {
+            showLoading(true);
+            try {
+                const response = await fetch('/api/save', { method: 'POST' });
+                const result = await response.json();
                 
                 if (response.ok) {
-                    alert('File deleted successfully');
-                    loadFiles(); // Refresh the files list
+                    showToast(`Data saved as: ${result.filename}`, 'success');
+                    loadFiles();
+                } else {
+                    showToast('Error saving data: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving data:', error);
+                showToast('Error saving data!', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function loadFiles() {
+            showLoading(true);
+            try {
+                const response = await fetch('/api/files');
+                const files = await response.json();
+                
+                const filesTable = document.getElementById('filesTable');
+                
+                if (files.length > 0) {
+                    filesTable.innerHTML = '';
+                    
+                    files.forEach(file => {
+                        const row = document.createElement('tr');
+                        const createdDate = new Date(file.created);
+                        const sizeKB = Math.round(file.size / 1024);
+                        
+                        row.innerHTML = `
+                            <td><i class="fas fa-file-code me-2"></i>${file.filename}</td>
+                            <td><span class="badge bg-info">${sizeKB} KB</span></td>
+                            <td>${createdDate.toLocaleString()}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="viewFile('${file.filename}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success me-1" onclick="loadFileData('${file.filename}')">
+                                    <i class="fas fa-upload"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteFile('${file.filename}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        filesTable.appendChild(row);
+                    });
+                    
+                    showToast(`${files.length} files loaded`, 'info');
+                } else {
+                    filesTable.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">
+                                <i class="fas fa-folder-open me-2"></i>
+                                No saved data files found
+                            </td>
+                        </tr>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading files:', error);
+                filesTable.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Error loading files: ${error.message}
+                        </td>
+                    </tr>
+                `;
+                showToast('Error loading files!', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function viewFile(filename) {
+            showLoading(true);
+            try {
+                const response = await fetch(`/api/files/${filename}`);
+                const fileData = await response.json();
+                showModal(JSON.stringify(fileData, null, 2));
+            } catch (error) {
+                console.error('Error viewing file:', error);
+                showToast('Error viewing file!', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function loadFileData(filename) {
+            if (!confirm(`Load data from ${filename}?`)) return;
+            
+            showLoading(true);
+            try {
+                const response = await fetch(`/api/files/${filename}`);
+                const fileData = await response.json();
+                
+                allData = fileData;
+                updateDashboard();
+                showToast(`Data from ${filename} loaded successfully!`, 'success');
+            } catch (error) {
+                console.error('Error loading file data:', error);
+                showToast('Error loading file data!', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function deleteFile(filename) {
+            if (!confirm(`Are you sure you want to delete ${filename}?`)) return;
+            
+            showLoading(true);
+            try {
+                const response = await fetch(`/api/files/${filename}`, { method: 'DELETE' });
+                
+                if (response.ok) {
+                    showToast('File deleted successfully', 'success');
+                    loadFiles();
                 } else {
                     const result = await response.json();
-                    alert('Error deleting file: ' + result.error);
+                    showToast('Error deleting file: ' + result.error, 'error');
                 }
             } catch (error) {
                 console.error('Error deleting file:', error);
-                alert('Error deleting file: ' + error.message);
+                showToast('Error deleting file!', 'error');
+            } finally {
+                showLoading(false);
             }
         }
-    }
 
-    // Initialize the dashboard when the page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        updateDashboard();
-    });
-</script>
+        function clearLocalData() {
+            if (confirm('Clear all local data? This will reset the dashboard.')) {
+                allData = {
+                    deviceData: {
+                        '192.168.18.253': {
+                            info: {},
+                            allUsers: [],
+                            adminUsers: [],
+                            attendanceLogs: [],
+                            deviceIP: '192.168.18.253',
+                            status: 'offline'
+                        },
+                        '192.168.18.252': {
+                            info: {},
+                            allUsers: [],
+                            adminUsers: [],
+                            attendanceLogs: [],
+                            deviceIP: '192.168.18.252',
+                            status: 'offline'
+                        }
+                    },
+                    combinedData: {
+                        info: {},
+                        allUsers: [],
+                        adminUsers: [],
+                        attendanceLogs: []
+                    }
+                };
+                updateDashboard();
+                showToast('Local data cleared', 'info');
+            }
+        }
+
+        // Initialize Dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Try to load initial data
+            fetch('/api/data')
+                .then(response => response.json())
+                .then(data => {
+                    allData = data;
+                    updateDashboard();
+                    showToast('Dashboard loaded successfully!', 'success');
+                })
+                .catch(error => {
+                    console.error('Error loading initial data:', error);
+                    updateDashboard(); // Show empty dashboard
+                });
+            
+            // Load files list
+            loadFiles();
+            
+            // Update time every second
+            setInterval(updateCurrentTime, 1000);
+        });
+    </script>
 </body>
 </html>

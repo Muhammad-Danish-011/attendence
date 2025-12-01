@@ -19,122 +19,88 @@ if (!fs.existsSync(dataDir)) {
 app.set("view engine", "ejs");
 app.use(express.static("public"));
 
-// Global array to store ALL attendance records
+// Global State
 let allAttendanceRecords = [];
+let uniqueSignatures = new Set(); 
 
-// Load existing records from today's file
+// FIX: Ye variable frontend ko crash hone se bachayega
+let latestDeviceData = {
+    '192.168.18.253': { status: 'initializing', attendanceLogs: [] },
+    '192.168.18.252': { status: 'initializing', attendanceLogs: [] }
+};
+
+// 1. Helper to create a Unique Key for every record
+const createRecordSignature = (record) => {
+    return `${record.deviceIP}_${record.deviceUserId}_${new Date(record.recordTime).getTime()}`;
+};
+
+// 2. Load existing records
 const loadExistingRecords = () => {
     try {
         const today = new Date().toISOString().split('T')[0];
         const filepath = path.join(dataDir, `attendance_${today}.json`);
         
+        allAttendanceRecords = [];
+        uniqueSignatures.clear();
+
         if (fs.existsSync(filepath)) {
             const fileContent = fs.readFileSync(filepath, 'utf8');
             const data = JSON.parse(fileContent);
             
-            // Extract ALL attendance records from file
-            allAttendanceRecords = [];
             if (Array.isArray(data)) {
-                data.forEach(entry => {
-                    if (entry.attendanceLogs && Array.isArray(entry.attendanceLogs)) {
-                        allAttendanceRecords.push(...entry.attendanceLogs);
+                data.forEach(item => {
+                    if (item.deviceUserId && item.recordTime) {
+                        const sig = createRecordSignature(item);
+                        if (!uniqueSignatures.has(sig)) {
+                            uniqueSignatures.add(sig);
+                            allAttendanceRecords.push(item);
+                        }
                     }
                 });
             }
-            
-            console.log(`📁 Loaded ${allAttendanceRecords.length} existing records`);
-        } else {
-            console.log('📄 Starting fresh - no existing file');
-            allAttendanceRecords = [];
+            console.log(`📁 Loaded ${allAttendanceRecords.length} unique records`);
         }
     } catch (error) {
         console.log('❌ Error loading records:', error.message);
         allAttendanceRecords = [];
+        uniqueSignatures.clear();
     }
 };
 
-// Check if record already exists
-const isRecordExists = (record) => {
-    return allAttendanceRecords.some(existing => 
-        existing.userSn === record.userSn && 
-        existing.recordTime === record.recordTime &&
-        existing.deviceIP === record.deviceIP
-    );
-};
-
-// Get only NEW records
-const getNewRecords = (currentRecords) => {
-    const newRecords = currentRecords.filter(record => !isRecordExists(record));
-    console.log(`🔄 New records: ${newRecords.length} / ${currentRecords.length}`);
-    return newRecords;
-};
-
-// Save ONLY NEW records to file
-const saveNewRecords = (newRecords) => {
-    if (newRecords.length === 0) {
-        console.log('⏭️ No new records to save');
-        return;
-    }
-
+// 3. Save Records
+const saveRecords = () => {
     try {
         const today = new Date().toISOString().split('T')[0];
         const filepath = path.join(dataDir, `attendance_${today}.json`);
-        
-        let fileData = [];
-        if (fs.existsSync(filepath)) {
-            try {
-                const fileContent = fs.readFileSync(filepath, 'utf8');
-                fileData = JSON.parse(fileContent);
-            } catch (err) {
-                fileData = [];
-            }
-        }
-
-        // Create simple entry with only new records
-        const newEntry = {
-            timestamp: new Date().toISOString(),
-            newRecordsCount: newRecords.length,
-            attendanceLogs: newRecords
-        };
-
-        fileData.push(newEntry);
-        fs.writeFileSync(filepath, JSON.stringify(fileData, null, 2));
-        
-        // Update global array
-        allAttendanceRecords.push(...newRecords);
-        
-        console.log(`💾 Saved ${newRecords.length} new records | Total: ${allAttendanceRecords.length}`);
-        
+        fs.writeFileSync(filepath, JSON.stringify(allAttendanceRecords, null, 2));
     } catch (error) {
         console.error('❌ Error saving records:', error);
     }
 };
 
-// Fetch device data
+// 4. Fetch device data
 const fetchDeviceData = async (ip) => {
-    const zkInstance = new ZKLib(ip, 4370, 10000, 4000);
+    const zkInstance = new ZKLib(ip, 4370, 5000, 4000);
 
     try {
         await zkInstance.createSocket();
-
         const users = await zkInstance.getUsers();
         const logs = await zkInstance.getAttendances();
 
         const allUsers = users?.data || [];
         const attendanceLogs = logs?.data || [];
 
-        // Create user map
         const userMap = {};
         allUsers.forEach(user => {
             userMap[user.userId] = user.name;
         });
 
-        // Enhance logs
         const enhancedLogs = attendanceLogs.map(log => ({
             ...log,
             name: userMap[log.deviceUserId] || 'Unknown',
             type: ip === '192.168.18.253' ? 'IN' : 'OUT',
-            deviceIP: ip
+            deviceIP: ip,
+            recordTime: new Date(log.recordTime).toISOString() 
         }));
 
         await zkInstance.disconnect();
@@ -154,25 +120,57 @@ const fetchDeviceData = async (ip) => {
     }
 };
 
-// Main function - ONLY SAVES NEW RECORDS
+// 5. Main Logic
 const fetchAndSaveNewRecords = async () => {
     const devices = ['192.168.18.253', '192.168.18.252'];
-
     console.log('\n🔄 Checking for new attendance records...');
 
     try {
         const results = await Promise.allSettled(devices.map(ip => fetchDeviceData(ip)));
         
-        let allCurrentRecords = [];
-        const deviceData = {};
+        let newRecordsCount = 0;
+        const currentBatchData = {
+            '192.168.18.253': {},
+            '192.168.18.252': {},
+            'combined': {}  // ✅ Combined view ke liye
+        };
+
+        // Combined data ke liye arrays
+        const combinedLogs = [];
+        const combinedUsers = [];
+        const combinedAdminUsers = [];
 
         results.forEach((result, index) => {
             const ip = devices[index];
+            
             if (result.status === 'fulfilled') {
-                deviceData[ip] = result.value;
-                allCurrentRecords.push(...result.value.attendanceLogs);
+                const logs = result.value.attendanceLogs;
+                
+                // Device-specific data
+                currentBatchData[ip] = { 
+                    ...result.value, 
+                    attendanceLogs: logs,
+                    allUsers: result.value.allUsers || [],
+                    adminUsers: result.value.adminUsers || [],
+                    info: result.value.info || {}
+                };
+
+                // Combined data collect karo
+                combinedLogs.push(...logs);
+                if (result.value.allUsers) combinedUsers.push(...result.value.allUsers);
+                if (result.value.adminUsers) combinedAdminUsers.push(...result.value.adminUsers);
+
+                logs.forEach(record => {
+                    const sig = createRecordSignature(record);
+                    if (!uniqueSignatures.has(sig)) {
+                        uniqueSignatures.add(sig);
+                        allAttendanceRecords.push(record);
+                        newRecordsCount++;
+                    }
+                });
+
             } else {
-                deviceData[ip] = {
+                currentBatchData[ip] = {
                     attendanceLogs: [],
                     status: 'offline',
                     error: result.reason.message
@@ -180,22 +178,30 @@ const fetchAndSaveNewRecords = async () => {
             }
         });
 
-        // Get ONLY NEW records
-        const newRecords = getNewRecords(allCurrentRecords);
-        
-        // Save ONLY if new records exist
-        if (newRecords.length > 0) {
-            saveNewRecords(newRecords);
-            console.log(`✅ ${newRecords.length} NEW records saved`);
+        // ✅ COMBINED VIEW DATA
+        currentBatchData['combined'] = {
+            attendanceLogs: combinedLogs,
+            allUsers: [...new Map(combinedUsers.map(user => [user.userId, user])).values()], // Remove duplicates
+            adminUsers: [...new Map(combinedAdminUsers.map(user => [user.userId, user])).values()],
+            info: { type: 'Combined View', userCounts: combinedUsers.length },
+            status: 'online'
+        };
+
+        // Update global variable
+        latestDeviceData = currentBatchData;
+
+        if (newRecordsCount > 0) {
+            saveRecords();
+            console.log(`💾 Added & Saved ${newRecordsCount} NEW records.`);
         } else {
-            console.log(`⏭️ No new records found`);
+            console.log(`⏭️ No new records found.`);
         }
 
         return {
-            deviceData,
-            newRecordsCount: newRecords.length,
-            totalRecords: allAttendanceRecords.length,
-            currentRecords: allCurrentRecords.length
+            deviceData: latestDeviceData,
+            combinedData: currentBatchData['combined'], // ✅ Ye important hai
+            newRecordsCount,
+            totalRecords: allAttendanceRecords.length
         };
 
     } catch (err) {
@@ -210,11 +216,10 @@ cron.schedule('*/30 * * * *', async () => {
     await fetchAndSaveNewRecords();
 });
 
-// Load existing records on startup
+// Startup
 console.log('🚀 Starting server...');
 loadExistingRecords();
 
-// Initial fetch
 setTimeout(() => {
     fetchAndSaveNewRecords().then(() => {
         console.log('✅ Initial check completed');
@@ -223,49 +228,117 @@ setTimeout(() => {
 
 // Routes
 app.get("/", async (req, res) => {
-    try {
-        const data = await fetchAndSaveNewRecords();
-        res.render("index", {
-            ...data,
-            allAttendanceRecords: allAttendanceRecords
-        });
-    } catch (error) {
-        res.render("index", {
-            deviceData: {},
-            newRecordsCount: 0,
-            totalRecords: allAttendanceRecords.length,
-            error: error.message
-        });
-    }
-});
-
-app.get("/api/data", async (req, res) => {
-    try {
-        const data = await fetchAndSaveNewRecords();
-        res.json(data);
-    } catch (error) {
-        res.json({ error: error.message });
-    }
-});
-
-app.get("/api/records", (req, res) => {
-    res.json({
+    res.render("index", {
+        // FIX: Ensure deviceData is never undefined
+        deviceData: latestDeviceData || {}, 
+        newRecordsCount: 0,
         totalRecords: allAttendanceRecords.length,
-        records: allAttendanceRecords
+        allAttendanceRecords: allAttendanceRecords
     });
 });
 
-app.get("/api/health", (req, res) => {
-    res.json({ 
-        status: 'running',
-        totalSavedRecords: allAttendanceRecords.length,
-        lastCheck: new Date().toLocaleString()
+app.get("/force-refresh", async (req, res) => {
+    const data = await fetchAndSaveNewRecords();
+    res.json(data);
+});
+
+// FIX: Updated API route to send structure expected by frontend
+// FIX: API route update karo
+app.get("/api/data", (req, res) => {
+    res.json({
+        deviceData: latestDeviceData,
+        combinedData: latestDeviceData['combined'] || {
+            attendanceLogs: [],
+            allUsers: [],
+            adminUsers: [],
+            info: {},
+            status: 'online'
+        },
+        totalRecords: allAttendanceRecords.length,
+        allAttendanceRecords: allAttendanceRecords
     });
 });
+// File Management API Endpoints
+app.get("/api/files", (req, res) => {
+    try {
+        const files = fs.readdirSync(dataDir)
+            .filter(file => file.endsWith('.json'))
+            .map(file => {
+                const filePath = path.join(dataDir, file);
+                const stats = fs.statSync(filePath);
+                return {
+                    filename: file,
+                    path: filePath,
+                    size: stats.size,
+                    created: stats.birthtime,
+                    modified: stats.mtime
+                };
+            })
+            .sort((a, b) => new Date(b.created) - new Date(a.created));
+        
+        res.json(files);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// API endpoint to get specific file content
+app.get("/api/files/:filename", (req, res) => {
+    try {
+        const filename = req.params.filename;
+        if (filename.includes('..') || !filename.endsWith('.json')) {
+            return res.status(400).json({ error: 'Invalid filename' });
+        }
+        
+        const filePath = path.join(dataDir, filename);
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: 'File not found' });
+        }
+        
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        res.json(JSON.parse(fileContent));
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// API endpoint to delete a file
+app.delete("/api/files/:filename", (req, res) => {
+    try {
+        const filename = req.params.filename;
+        if (filename.includes('..') || !filename.endsWith('.json')) {
+            return res.status(400).json({ error: 'Invalid filename' });
+        }
+        
+        const filePath = path.join(dataDir, filename);
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: 'File not found' });
+        }
+        
+        fs.unlinkSync(filePath);
+        res.json({ message: 'File deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Manual save endpoint
+app.post("/api/save", async (req, res) => {
+    try {
+        const data = await fetchAndSaveNewRecords();
+        const today = new Date().toISOString().split('T')[0];
+        const filename = `attendance_${today}.json`;
+        
+        res.json({ 
+            message: 'Data saved successfully', 
+            filename: filename 
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 app.listen(PORT, () => {
     console.log(`\n🎉 Server: http://localhost:${PORT}`);
-    console.log(`⏰ Auto check: Every 30 minutes`);
-    console.log(`💾 Only NEW records are saved`);
-    console.log(`📊 Current records: ${allAttendanceRecords.length}`);
 });
