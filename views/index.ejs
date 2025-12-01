@@ -683,6 +683,76 @@
             </div>
         </div>
 
+<!-- Add this to your existing HTML file -->
+<div class="card mt-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-upload me-2"></i>Upload Attendance Data
+        </h5>
+    </div>
+    <div class="card-body">
+        <!-- Method 1: File Upload -->
+        <div class="upload-section mb-4">
+            <h6><i class="fas fa-file-upload me-2"></i>Upload JSON File</h6>
+            <div class="mb-3">
+                <label class="form-label">Select attendance JSON file</label>
+                <input type="file" class="form-control" id="fileInput" accept=".json">
+                <small class="text-muted">Choose the attendance.json file from your system</small>
+            </div>
+            <button class="btn btn-primary" onclick="uploadFile()" id="uploadBtn">
+                <i class="fas fa-upload me-2"></i>Upload File
+            </button>
+        </div>
+
+        <hr>
+
+        <!-- Method 2: Upload from Default Path -->
+        <div class="default-path-section mb-4">
+            <h6><i class="fas fa-folder me-2"></i>Upload from Default Path</h6>
+            <div class="alert alert-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Default Location:</strong><br>
+                        <code id="defaultPathDisplay">C:\Users\softw\Desktop\zkteco-attendance\data\attendance.json</code>
+                    </div>
+                    <button class="btn btn-sm btn-info" onclick="checkDefaultFile()" id="checkBtn">
+                        <i class="fas fa-search me-1"></i>Check
+                    </button>
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="uploadFromDefaultPath()" id="uploadPathBtn">
+                <i class="fas fa-folder-open me-2"></i>Upload from Default Path
+            </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-section" style="display: none;" id="progressSection">
+            <div class="progress mb-3">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                     id="progressBar" 
+                     role="progressbar" 
+                     style="width: 0%">
+                    0%
+                </div>
+            </div>
+            <div class="text-center">
+                <span id="progressText">Processing...</span>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-section mt-4" style="display: none;" id="resultsSection">
+            <div class="alert" id="resultAlert">
+                <h6 class="alert-heading" id="resultTitle"></h6>
+                <div id="resultDetails"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
         <!-- FILE MANAGEMENT -->
         <div class="card">
             <div class="card-header card-header-files">
@@ -1094,6 +1164,453 @@
             populateLogsTable(outLogs, 'outAttendanceLogsTable', 'outLogs', 'outLogsPagination');
             populateLogsTable(allLogs, 'allAttendanceLogsTable', 'allLogs', 'allLogsPagination');
         }
+
+
+// Upload Functions
+async function uploadFile() {
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a file');
+        return;
+    }
+    
+    if (!file.name.endsWith('.json')) {
+        alert('Only JSON files allowed');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('uploadBtn').disabled = true;
+    document.getElementById('uploadBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('https://localhost:5001/api/attendance/upload-file', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert(`✅ Upload Successful!\nSaved: ${result.data?.savedRecords}\nDuplicates: ${result.data?.duplicateRecords}`);
+        } else {
+            alert(`❌ Upload Failed: ${result.message}`);
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Network error: ' + error.message);
+    } finally {
+        document.getElementById('uploadBtn').disabled = false;
+        document.getElementById('uploadBtn').innerHTML = '<i class="fas fa-upload me-2"></i>Upload File';
+    }
+}
+// For testing: Upload JSON data directly (without file)
+async function uploadJsonDirectly() {
+    // Example JSON data (same as your file content)
+    const jsonData = [
+        {
+            "userSn": 29348,
+            "deviceUserId": "75",
+            "recordTime": "2025-11-24T15:30:17.000Z",
+            "name": "Muhammad Ahmed",
+            "type": "IN",
+            "deviceIP": "192.168.18.253"
+        }
+    ];
+    
+    try {
+        const response = await fetch('https://localhost:5001/api/attendance/upload-direct', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(jsonData)
+        });
+        
+        const result = await response.json();
+        console.log('Direct upload result:', result);
+    } catch (error) {
+        console.error('Direct upload error:', error);
+    }
+}
+// Helper function to read file content
+function readFileContent(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target.result);
+        reader.onerror = (error) => reject(error);
+        reader.readAsText(file);
+    });
+}
+
+// Transform Node.js data format to C# DTO format
+function transformToCSharpFormat(nodeRecords) {
+    return nodeRecords.map(record => ({
+        UserSN: record.userSn || 0,
+        DeviceUserID: record.deviceUserId?.toString() || '',
+        UserName: record.name || 'Unknown',
+        RecordTime: new Date(record.recordTime).toISOString(),
+        DeviceIP: record.deviceIP || record.ip || '',
+        Type: record.type || 'UNKNOWN'
+    }));
+}
+
+// Alternative: Upload as FormData (if your C# API expects file)
+async function uploadFileAsFormData() {
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a file first!');
+        return;
+    }
+    
+    console.log(`📤 Uploading file as FormData: ${file.name}`);
+    
+    // Show progress
+    showUploadProgress(true);
+    
+    try {
+        // Read and transform the data
+        const fileContent = await readFileContent(file);
+        const nodeData = JSON.parse(fileContent);
+        const csharpRecords = transformToCSharpFormat(nodeData);
+        
+        // Create a new JSON file with transformed data
+        const transformedJson = JSON.stringify(csharpRecords);
+        const transformedFile = new Blob([transformedJson], { type: 'application/json' });
+        
+        // Create FormData with transformed file
+        const formData = new FormData();
+        formData.append('file', transformedFile, 'transformed_' + file.name);
+        
+        // Send to C# API
+        const response = await fetch('https://localhost:5001/api/attendance/upload-file', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showUploadResult('success', '✅ Upload Successful!', result);
+            console.log('Upload successful:', result);
+        } else {
+            showUploadResult('error', '❌ Upload Failed', result);
+        }
+        
+    } catch (error) {
+        console.error('Upload error:', error);
+        showUploadResult('error', '❌ Upload Error', { error: error.message });
+    } finally {
+        showUploadProgress(false);
+    }
+}
+
+// Function to handle upload from default path with dynamic filename
+async function uploadFromDefaultPath() {
+    // Get today's date for filename
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dynamicFileName = `attendance_${year}-${month}-${day}.json`;
+    
+    // Update the default path with dynamic filename
+    const defaultPath = `C:/Users/softw/Desktop/zkteco-attendance/data/${dynamicFileName}`;
+    
+    if (!confirm(`Upload from default path?\n${defaultPath}`)) {
+        return;
+    }
+    
+    showUploadProgress(true);
+    updateProgress(25);
+    
+    try {
+        const response = await fetch('/api/attendance/upload-from-path', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                filePath: defaultPath,
+                requestedFilename: dynamicFileName
+            })
+        });
+        
+        updateProgress(50);
+        const result = await response.json();
+        updateProgress(75);
+        
+        if (response.ok) {
+            showUploadResult('success', '✅ Upload from Path Successful!', result);
+            
+            // Refresh data
+            setTimeout(() => {
+                refreshData();
+                loadFiles();
+            }, 1000);
+            
+        } else {
+            showUploadResult('error', '❌ Upload Failed', result);
+        }
+        
+    } catch (error) {
+        console.error('Upload error:', error);
+        showUploadResult('error', '❌ Upload Error', { error: error.message });
+    } finally {
+        showUploadProgress(false);
+        updateProgress(0);
+    }
+}
+
+// Function to check if default file exists (with dynamic name)
+async function checkDefaultFile() {
+    const checkBtn = document.getElementById('checkBtn');
+    const originalText = checkBtn.innerHTML;
+    
+    checkBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Checking...';
+    checkBtn.disabled = true;
+    
+    try {
+        // Get today's date for filename
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const dynamicFileName = `attendance_${year}-${month}-${day}.json`;
+        
+        const defaultPath = `C:/Users/softw/Desktop/zkteco-attendance/data/${dynamicFileName}`;
+        
+        // Update the display
+        document.getElementById('defaultPathDisplay').textContent = defaultPath;
+        
+        // Check the file
+        const response = await fetch('/api/attendance/check-default-file', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                date: `${year}-${month}-${day}`,
+                filename: dynamicFileName
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            if (result.fileInfo.exists) {
+                const sizeMB = (result.fileInfo.size / (1024 * 1024)).toFixed(2);
+                const message = `✅ File found!\n\nFile: ${result.fileInfo.filename}\nPath: ${result.fileInfo.path}\nSize: ${sizeMB} MB\nLast Modified: ${new Date(result.fileInfo.lastModified).toLocaleString()}`;
+                
+                // Show modal instead of alert for better UX
+                showFileInfoModal(result.fileInfo);
+            } else {
+                // Check for other recent files
+                await checkRecentFiles();
+            }
+        } else {
+            alert('❌ Error checking file: ' + result.error);
+        }
+        
+    } catch (error) {
+        alert('❌ Error checking file: ' + error.message);
+    } finally {
+        checkBtn.innerHTML = originalText;
+        checkBtn.disabled = false;
+    }
+}
+
+// Function to check for recent attendance files
+async function checkRecentFiles() {
+    try {
+        const response = await fetch('/api/attendance/list-recent-files');
+        const result = await response.json();
+        
+        if (result.success && result.files.length > 0) {
+            let message = `⚠️ Today's file not found, but found ${result.files.length} recent files:\n\n`;
+            
+            result.files.forEach((file, index) => {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                const modified = new Date(file.modified).toLocaleDateString();
+                message += `${index + 1}. ${file.filename} (${sizeMB} MB, ${modified})\n`;
+            });
+            
+            message += '\nClick "Upload from Default Path" to upload a specific file.';
+            
+            // Show modal with file list
+            showRecentFilesModal(result.files);
+        } else {
+            alert('❌ No attendance files found in default directory');
+        }
+        
+    } catch (error) {
+        console.error('Error checking recent files:', error);
+    }
+}
+
+
+async function uploadFromDefaultPath() {
+    if (!confirm('Upload from default path?\nC:\\Users\\softw\\Desktop\\zkteco-attendance\\data\\attendance.json')) {
+        return;
+    }
+    
+    showUploadProgress(true);
+    updateProgress(25);
+    
+    try {
+        const response = await fetch('/api/attendance/upload-from-path', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                filePath: "C:\\Users\\softw\\Desktop\\zkteco-attendance\\data\\attendance.json"
+            })
+        });
+        
+        updateProgress(50);
+        const result = await response.json();
+        updateProgress(75);
+        
+        if (response.ok) {
+            showUploadResult('success', '✅ Upload from Path Successful!', result);
+            
+            // Refresh data
+            setTimeout(() => {
+                refreshData();
+            }, 1000);
+            
+        } else {
+            showUploadResult('error', '❌ Upload Failed', result);
+        }
+        
+    } catch (error) {
+        console.error('Upload error:', error);
+        showUploadResult('error', '❌ Upload Error', { error: error.message });
+    } finally {
+        showUploadProgress(false);
+        updateProgress(0);
+    }
+}
+
+async function checkDefaultFile() {
+    const checkBtn = document.getElementById('checkBtn');
+    const originalText = checkBtn.innerHTML;
+    
+    checkBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Checking...';
+    checkBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/attendance/check-default-file');
+        const result = await response.json();
+        
+        if (result.success && result.fileInfo.exists) {
+            const sizeMB = (result.fileInfo.size / (1024 * 1024)).toFixed(2);
+            alert(`✅ File found!\n\nPath: ${result.fileInfo.path}\nSize: ${sizeMB} MB\nLast Modified: ${new Date(result.fileInfo.lastModified).toLocaleString()}`);
+        } else {
+            alert('❌ File not found at default location');
+        }
+    } catch (error) {
+        alert('❌ Error checking file: ' + error.message);
+    } finally {
+        checkBtn.innerHTML = originalText;
+        checkBtn.disabled = false;
+    }
+}
+
+// UI Helper Functions
+function showUploadProgress(show) {
+    document.getElementById('progressSection').style.display = show ? 'block' : 'none';
+    document.getElementById('resultsSection').style.display = 'none';
+}
+
+function updateProgress(percent) {
+    const progressBar = document.getElementById('progressBar');
+    progressBar.style.width = percent + '%';
+    progressBar.textContent = percent + '%';
+    document.getElementById('progressText').textContent = 
+        percent < 100 ? 'Processing... ' + percent + '%' : 'Complete!';
+}
+
+function showUploadResult(type, title, data) {
+    const resultSection = document.getElementById('resultsSection');
+    const resultAlert = document.getElementById('resultAlert');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultDetails = document.getElementById('resultDetails');
+    
+    // Set alert type
+    resultAlert.className = `alert alert-${type === 'success' ? 'success' : 'danger'}`;
+    
+    // Set title
+    resultTitle.innerHTML = title;
+    
+    // Set details
+    let detailsHTML = '';
+    
+    if (type === 'success') {
+        detailsHTML = `
+            <p><strong>File:</strong> ${data.fileInfo?.originalName || data.fileInfo?.path || 'N/A'}</p>
+            <p><strong>Size:</strong> ${formatBytes(data.fileInfo?.size || 0)}</p>
+            <p><strong>Processing Results:</strong></p>
+            <ul class="mb-0">
+                <li>Total records in file: ${data.processingResults?.totalRecordsInFile || 0}</li>
+                <li>Processed records: ${data.processingResults?.processedRecords || 0}</li>
+                <li><strong>New records added: ${data.processingResults?.newRecordsAdded || 0}</strong></li>
+                <li>Total records now: ${data.processingResults?.totalRecordsNow || 0}</li>
+            </ul>
+        `;
+        
+        if (data.processingResults?.errors) {
+            detailsHTML += `<p class="mt-2 text-warning"><strong>Warnings:</strong> ${data.processingResults.errors.join(', ')}</p>`;
+        }
+    } else {
+        detailsHTML = `
+            <p><strong>Error:</strong> ${data.message || data.error || 'Unknown error'}</p>
+        `;
+    }
+    
+    resultDetails.innerHTML = detailsHTML;
+    resultSection.style.display = 'block';
+    
+    // Scroll to results
+    resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+// Initialize upload section
+document.addEventListener('DOMContentLoaded', function() {
+    // Update default path display
+    document.getElementById('defaultPathDisplay').textContent = 
+        "C:\\Users\\softw\\Desktop\\zkteco-attendance\\data\\attendance.json";
+    
+    // Add file change event
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            console.log('File selected:', file.name, '(', formatBytes(file.size), ')');
+        }
+    });
+});
+
+
+
+
 
         // Populate Users Table with Pagination
         function populateUsersTable(users, tableId, pageKey = null, paginationId = null) {

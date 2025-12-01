@@ -4,9 +4,10 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import cron from 'node-cron';
+import axios from 'axios'; // You need to install axios: npm install axios
 
 const app = express();
-const PORT = 5000;
+const PORT = 3000;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,18 +80,19 @@ const loadExistingRecords = () => {
     }
 };
 
-// Save Records
+// Save Records locally
 const saveRecords = () => {
     try {
         const today = new Date().toISOString().split('T')[0];
         const filepath = path.join(dataDir, `attendance_${today}.json`);
         fs.writeFileSync(filepath, JSON.stringify(allAttendanceRecords, null, 2));
+        console.log(`💾 Saved ${allAttendanceRecords.length} records locally to ${filepath}`);
     } catch (error) {
-        console.error('❌ Error saving records:', error);
+        console.error('❌ Error saving records locally:', error);
     }
 };
 
-// Fetch device data - FIXED: Now returns allUsers and adminUsers
+// Fetch device data
 const fetchDeviceData = async (ip) => {
     const zkInstance = new ZKLib(ip, 4370, 5000, 4000);
 
@@ -118,7 +120,7 @@ const fetchDeviceData = async (ip) => {
             name: userMap[log.deviceUserId] || 'Unknown',
             type: ip === '192.168.18.253' ? 'IN' : 'OUT',
             deviceIP: ip,
-            recordTime: new Date(log.recordTime).toISOString() 
+            recordTime: new Date(log.recordTime).toISOString()
         }));
 
         await zkInstance.disconnect();
@@ -146,10 +148,61 @@ const fetchDeviceData = async (ip) => {
     }
 };
 
-// Main Logic - FIXED: Properly combine user data
-const fetchAndSaveNewRecords = async () => {
+// Convert to C# API format
+const convertToCSharpFormat = (logs) => {
+    return logs.map(log => ({
+        UserSN: log.userSn || 0,
+        DeviceUserID: log.deviceUserId?.toString() || '',
+        UserName: log.name || 'Unknown',
+        RecordTime: new Date(log.recordTime),
+        DeviceIP: log.deviceIP || '',
+        Type: log.type || 'UNKNOWN'
+    }));
+};
+
+// Send data to C# API
+const sendToCSharpAPI = async (records) => {
+    if (!records || records.length === 0) {
+        console.log('⚠️ No records to send to C# API');
+        return { success: false, message: 'No records to send' };
+    }
+
+    try {
+        console.log(`📤 Sending ${records.length} records to C# API...`);
+        
+        const convertedRecords = convertToCSharpFormat(records);
+        
+        // Send to your C# API endpoint
+        const response = await axios.post('https://localhost:5001/api/attendance/upload-file', 
+            convertedRecords,
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        
+        console.log(`✅ Successfully sent to C# API:`, response.data);
+        return {
+            success: true,
+            data: response.data,
+            recordsSent: records.length
+        };
+        
+    } catch (error) {
+        console.error('❌ Error sending to C# API:', error.message);
+        return {
+            success: false,
+            error: error.message,
+            recordsSent: 0
+        };
+    }
+};
+
+// Main Logic - Fetch data and send to C# API
+const fetchAndSendToAPI = async () => {
     const devices = ['192.168.18.253', '192.168.18.252'];
-    console.log('\n🔄 Checking for new attendance records...');
+    console.log('\n🔄 Fetching data from devices to send to C# API...');
 
     try {
         const results = await Promise.allSettled(devices.map(ip => fetchDeviceData(ip)));
@@ -161,7 +214,6 @@ const fetchAndSaveNewRecords = async () => {
             'combined': {}
         };
 
-        // Combined data ke liye arrays
         const combinedLogs = [];
         const combinedAllUsers = [];
         const combinedAdminUsers = [];
@@ -181,7 +233,7 @@ const fetchAndSaveNewRecords = async () => {
                     info: deviceData.info
                 };
 
-                // Combined data collect karo
+                // Combine data
                 combinedLogs.push(...deviceData.attendanceLogs);
                 combinedAllUsers.push(...deviceData.allUsers);
                 combinedAdminUsers.push(...deviceData.adminUsers);
@@ -209,15 +261,15 @@ const fetchAndSaveNewRecords = async () => {
             }
         });
 
-        // ✅ COMBINED VIEW DATA - FIXED: Proper user data
+        // ✅ COMBINED VIEW DATA
         currentBatchData['combined'] = {
             info: { 
                 type: 'Combined View', 
                 userCounts: combinedAllUsers.length,
                 logCount: combinedLogs.length 
             },
-            allUsers: [...new Map(combinedAllUsers.map(user => [user.userId, user])).values()], // Remove duplicates
-            adminUsers: [...new Map(combinedAdminUsers.map(user => [user.userId, user])).values()], // Remove duplicates
+            allUsers: [...new Map(combinedAllUsers.map(user => [user.userId, user])).values()],
+            adminUsers: [...new Map(combinedAdminUsers.map(user => [user.userId, user])).values()],
             attendanceLogs: combinedLogs,
             deviceIP: 'Multiple Devices',
             status: 'online'
@@ -227,19 +279,31 @@ const fetchAndSaveNewRecords = async () => {
         latestDeviceData = currentBatchData;
 
         if (newRecordsCount > 0) {
+            // Save locally first
             saveRecords();
-            console.log(`💾 Added & Saved ${newRecordsCount} NEW attendance records.`);
-            console.log(`👥 Total users in combined view: ${combinedAllUsers.length}`);
-            console.log(`👑 Admin users: ${combinedAdminUsers.length}`);
+            
+            // Send new records to C# API
+            const newRecords = allAttendanceRecords.slice(-newRecordsCount);
+            const apiResult = await sendToCSharpAPI(newRecords);
+            
+            console.log(`💾 Added & Saved ${newRecordsCount} NEW attendance records locally.`);
+            console.log(`📤 API Send Result: ${apiResult.success ? 'Success' : 'Failed'}`);
+            
+            if (apiResult.success) {
+                console.log(`✅ Sent ${newRecordsCount} records to C# API successfully`);
+            } else {
+                console.log(`❌ Failed to send to C# API: ${apiResult.error}`);
+            }
         } else {
-            console.log(`⏭️ No new records found.`);
+            console.log(`⏭️ No new records found. Nothing to send to API.`);
         }
 
         return {
             deviceData: latestDeviceData,
             combinedData: currentBatchData['combined'],
             newRecordsCount,
-            totalRecords: allAttendanceRecords.length
+            totalRecords: allAttendanceRecords.length,
+            apiSent: newRecordsCount > 0
         };
 
     } catch (err) {
@@ -248,32 +312,83 @@ const fetchAndSaveNewRecords = async () => {
     }
 };
 
-// Auto fetch every 30 minutes
+// ==================== CRON JOB - Every 30 minutes ====================
+// This will run automatically every 30 minutes
 cron.schedule('*/30 * * * *', async () => {
-    console.log(`\n⏰ Scheduled check: ${new Date().toLocaleString()}`);
-    await fetchAndSaveNewRecords();
+    console.log(`\n⏰ [SCHEDULED JOB] Running at: ${new Date().toLocaleString()}`);
+    console.log('📡 Fetching data from devices and sending to C# API...');
+    
+    const result = await fetchAndSendToAPI();
+    
+    if (result.error) {
+        console.log(`❌ Scheduled job failed: ${result.error}`);
+    } else {
+        console.log(`✅ Scheduled job completed. New records: ${result.newRecordsCount || 0}`);
+    }
+    
+    console.log('⏳ Next run in 30 minutes...\n');
 });
 
-// Startup
-console.log('🚀 Starting server...');
+// ==================== MANUAL TRIGGER ENDPOINTS ====================
+
+// Manual trigger endpoint
+app.get("/api/trigger-sync", async (req, res) => {
+    console.log('🔔 Manual sync triggered via API');
+    const result = await fetchAndSendToAPI();
+    res.json({
+        success: !result.error,
+        message: result.error ? 'Sync failed' : 'Sync completed',
+        data: result
+    });
+});
+
+// Force immediate sync
+app.get("/api/force-sync", async (req, res) => {
+    console.log('⚡ Force sync triggered');
+    const result = await fetchAndSendToAPI();
+    res.json({
+        success: !result.error,
+        message: result.error ? 'Force sync failed' : 'Force sync completed',
+        data: result,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// ==================== STARTUP ====================
+console.log('🚀 Starting ZKTeco Device Sync Scheduler...');
+console.log('📡 This app will automatically sync with devices every 30 minutes');
+console.log('🌐 And send data to C# API at: https://localhost:5001/api/attendance/upload-file');
+
 loadExistingRecords();
 
-setTimeout(() => {
-    fetchAndSaveNewRecords().then(() => {
-        console.log('✅ Initial check completed');
-    });
+// Initial sync after 2 seconds
+setTimeout(async () => {
+    console.log('\n🔔 Performing initial sync...');
+    const result = await fetchAndSendToAPI();
+    
+    if (result.error) {
+        console.log('❌ Initial sync failed:', result.error);
+    } else {
+        console.log('✅ Initial sync completed');
+        console.log(`📊 Total records: ${result.totalRecords || 0}`);
+        console.log(`🔄 Next auto-sync in 30 minutes`);
+    }
 }, 2000);
+
+// ==================== DASHBOARD ROUTES ====================
 
 // Routes
 app.get("/", async (req, res) => {
     try {
-        const data = await fetchAndSaveNewRecords();
+        const data = await fetchAndSendToAPI();
         res.render("index", {
             deviceData: latestDeviceData, 
             combinedData: latestDeviceData['combined'],
             newRecordsCount: data.newRecordsCount || 0,
             totalRecords: allAttendanceRecords.length,
-            allAttendanceRecords: allAttendanceRecords
+            allAttendanceRecords: allAttendanceRecords,
+            lastSync: new Date().toLocaleString(),
+            nextSync: new Date(Date.now() + 30 * 60 * 1000).toLocaleString()
         });
     } catch (error) {
         res.render("index", {
@@ -288,26 +403,30 @@ app.get("/", async (req, res) => {
             },
             newRecordsCount: 0,
             totalRecords: allAttendanceRecords.length,
-            allAttendanceRecords: allAttendanceRecords
+            allAttendanceRecords: allAttendanceRecords,
+            lastSync: 'Never',
+            nextSync: new Date(Date.now() + 30 * 60 * 1000).toLocaleString()
         });
     }
 });
 
 app.get("/force-refresh", async (req, res) => {
-    const data = await fetchAndSaveNewRecords();
+    const data = await fetchAndSendToAPI();
     res.json(data);
 });
 
 // Main API endpoint
 app.get("/api/data", async (req, res) => {
     try {
-        const data = await fetchAndSaveNewRecords();
+        const data = await fetchAndSendToAPI();
         res.json({
             deviceData: latestDeviceData,
             combinedData: latestDeviceData['combined'],
             newRecordsCount: data.newRecordsCount || 0,
             totalRecords: allAttendanceRecords.length,
-            allAttendanceRecords: allAttendanceRecords
+            allAttendanceRecords: allAttendanceRecords,
+            lastSyncTime: new Date().toISOString(),
+            nextSyncTime: new Date(Date.now() + 30 * 60 * 1000).toISOString()
         });
     } catch (error) {
         res.json({
@@ -322,106 +441,82 @@ app.get("/api/data", async (req, res) => {
             },
             newRecordsCount: 0,
             totalRecords: allAttendanceRecords.length,
-            allAttendanceRecords: allAttendanceRecords
+            allAttendanceRecords: allAttendanceRecords,
+            lastSyncTime: null,
+            nextSyncTime: new Date(Date.now() + 30 * 60 * 1000).toISOString()
         });
-    }
-});
-
-// File Management API Endpoints
-app.get("/api/files", (req, res) => {
-    try {
-        const files = fs.readdirSync(dataDir)
-            .filter(file => file.endsWith('.json'))
-            .map(file => {
-                const filePath = path.join(dataDir, file);
-                const stats = fs.statSync(filePath);
-                return {
-                    filename: file,
-                    path: filePath,
-                    size: stats.size,
-                    created: stats.birthtime,
-                    modified: stats.mtime
-                };
-            })
-            .sort((a, b) => new Date(b.created) - new Date(a.created));
-        
-        res.json(files);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// API endpoint to get specific file content
-app.get("/api/files/:filename", (req, res) => {
-    try {
-        const filename = req.params.filename;
-        if (filename.includes('..') || !filename.endsWith('.json')) {
-            return res.status(400).json({ error: 'Invalid filename' });
-        }
-        
-        const filePath = path.join(dataDir, filename);
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ error: 'File not found' });
-        }
-        
-        const fileContent = fs.readFileSync(filePath, 'utf8');
-        res.json(JSON.parse(fileContent));
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// API endpoint to delete a file
-app.delete("/api/files/:filename", (req, res) => {
-    try {
-        const filename = req.params.filename;
-        if (filename.includes('..') || !filename.endsWith('.json')) {
-            return res.status(400).json({ error: 'Invalid filename' });
-        }
-        
-        const filePath = path.join(dataDir, filename);
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ error: 'File not found' });
-        }
-        
-        fs.unlinkSync(filePath);
-        res.json({ message: 'File deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Manual save endpoint
-app.post("/api/save", async (req, res) => {
-    try {
-        const data = await fetchAndSaveNewRecords();
-        const today = new Date().toISOString().split('T')[0];
-        const filename = `attendance_${today}.json`;
-        
-        res.json({ 
-            message: 'Data saved successfully', 
-            filename: filename,
-            newRecordsCount: data.newRecordsCount || 0,
-            totalUsers: latestDeviceData['combined']?.allUsers?.length || 0
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
     }
 });
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
+    const now = new Date();
+    const nextRun = new Date(now.getTime() + 30 * 60 * 1000);
+    
     res.json({ 
         status: 'running',
-        timestamp: new Date().toISOString(),
-        totalRecords: allAttendanceRecords.length,
-        totalUsers: latestDeviceData['combined']?.allUsers?.length || 0,
-        adminUsers: latestDeviceData['combined']?.adminUsers?.length || 0
+        timestamp: now.toISOString(),
+        scheduler: {
+            enabled: true,
+            interval: 'Every 30 minutes',
+            lastRun: latestDeviceData['192.168.18.253']?.status === 'initializing' ? 'Never' : 'Recently',
+            nextRun: nextRun.toISOString()
+        },
+        devices: {
+            device1: latestDeviceData['192.168.18.253']?.status || 'unknown',
+            device2: latestDeviceData['192.168.18.252']?.status || 'unknown'
+        },
+        dataStats: {
+            totalRecords: allAttendanceRecords.length,
+            uniqueSignatures: uniqueSignatures.size
+        },
+        csharpApi: {
+            endpoint: 'https://localhost:5001/api/attendance/upload-file',
+            status: 'Active'
+        }
+    });
+});
+
+// Status endpoint
+app.get("/api/status", (req, res) => {
+    res.json({
+        scheduler: {
+            active: true,
+            description: 'Auto-sync every 30 minutes',
+            nextExecution: new Date(Date.now() + 30 * 60 * 1000).toLocaleString()
+        },
+        devices: [
+            {
+                ip: '192.168.18.253',
+                status: latestDeviceData['192.168.18.253']?.status || 'unknown',
+                lastCheck: new Date().toLocaleString()
+            },
+            {
+                ip: '192.168.18.252',
+                status: latestDeviceData['192.168.18.252']?.status || 'unknown',
+                lastCheck: new Date().toLocaleString()
+            }
+        ],
+        data: {
+            localRecords: allAttendanceRecords.length,
+            lastLocalSave: new Date().toLocaleString()
+        },
+        apiIntegration: {
+            csharpApi: 'https://localhost:5001/api/attendance/upload-file',
+            method: 'POST',
+            format: 'JSON array of AttendanceRecordDto'
+        }
     });
 });
 
 app.listen(PORT, () => {
-    console.log(`\n🎉 Server: http://localhost:${PORT}`);
-    console.log(`📁 Data directory: ${dataDir}`);
-    console.log(`⏰ Auto fetch: Every 30 minutes`);
+    console.log(`\n🎉 Scheduler Dashboard: http://localhost:${PORT}`);
+    console.log(`📁 Local Data Directory: ${dataDir}`);
+    console.log(`⏰ Auto Sync: Every 30 minutes`);
+    console.log(`📤 Target API: https://localhost:5001/api/attendance/upload-file`);
+    console.log(`\n📋 Manual Trigger Endpoints:`);
+    console.log(`   http://localhost:${PORT}/api/trigger-sync - Manual sync`);
+    console.log(`   http://localhost:${PORT}/api/force-sync - Force sync`);
+    console.log(`   http://localhost:${PORT}/api/status - Check status`);
+    console.log(`\n⏳ First auto-sync in 30 minutes...`);
 });

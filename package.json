@@ -20,9 +20,11 @@
   "description": "ZKTeco Auto Attendance System with Background Service",
   "dependencies": {
     "axios": "^1.13.2",
+    "cors": "^2.8.5",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "mssql": "^12.1.1",
+    "multer": "^2.0.2",
     "node-adodb": "^5.0.3",
     "node-cron": "^4.2.1",
     "node-zklib": "^1.3.0",
