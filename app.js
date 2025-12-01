@@ -22,19 +22,31 @@ app.use(express.static("public"));
 // Global State
 let allAttendanceRecords = [];
 let uniqueSignatures = new Set(); 
-
-// FIX: Ye variable frontend ko crash hone se bachayega
 let latestDeviceData = {
-    '192.168.18.253': { status: 'initializing', attendanceLogs: [] },
-    '192.168.18.252': { status: 'initializing', attendanceLogs: [] }
+    '192.168.18.253': { 
+        info: {},
+        allUsers: [],
+        adminUsers: [],
+        attendanceLogs: [],
+        deviceIP: '192.168.18.253',
+        status: 'initializing' 
+    },
+    '192.168.18.252': { 
+        info: {},
+        allUsers: [],
+        adminUsers: [],
+        attendanceLogs: [],
+        deviceIP: '192.168.18.252',
+        status: 'initializing' 
+    }
 };
 
-// 1. Helper to create a Unique Key for every record
+// Helper to create a Unique Key for every record
 const createRecordSignature = (record) => {
     return `${record.deviceIP}_${record.deviceUserId}_${new Date(record.recordTime).getTime()}`;
 };
 
-// 2. Load existing records
+// Load existing records
 const loadExistingRecords = () => {
     try {
         const today = new Date().toISOString().split('T')[0];
@@ -67,7 +79,7 @@ const loadExistingRecords = () => {
     }
 };
 
-// 3. Save Records
+// Save Records
 const saveRecords = () => {
     try {
         const today = new Date().toISOString().split('T')[0];
@@ -78,23 +90,29 @@ const saveRecords = () => {
     }
 };
 
-// 4. Fetch device data
+// Fetch device data - FIXED: Now returns allUsers and adminUsers
 const fetchDeviceData = async (ip) => {
     const zkInstance = new ZKLib(ip, 4370, 5000, 4000);
 
     try {
         await zkInstance.createSocket();
+        
+        // Get ALL data from device
+        const info = await zkInstance.getInfo();
         const users = await zkInstance.getUsers();
         const logs = await zkInstance.getAttendances();
 
         const allUsers = users?.data || [];
+        const adminUsers = allUsers.filter(u => u.role === 14);
         const attendanceLogs = logs?.data || [];
 
+        // Create user map for name lookup
         const userMap = {};
         allUsers.forEach(user => {
             userMap[user.userId] = user.name;
         });
 
+        // Enhance logs with user names
         const enhancedLogs = attendanceLogs.map(log => ({
             ...log,
             name: userMap[log.deviceUserId] || 'Unknown',
@@ -106,21 +124,29 @@ const fetchDeviceData = async (ip) => {
         await zkInstance.disconnect();
         
         return {
+            info: info || {},
+            allUsers,
+            adminUsers,
             attendanceLogs: enhancedLogs,
+            deviceIP: ip,
             status: 'online'
         };
 
     } catch (err) {
         console.log(`❌ Error from ${ip}:`, err.message);
         return {
+            info: {},
+            allUsers: [],
+            adminUsers: [],
             attendanceLogs: [],
+            deviceIP: ip,
             status: 'offline',
             error: err.message
         };
     }
 };
 
-// 5. Main Logic
+// Main Logic - FIXED: Properly combine user data
 const fetchAndSaveNewRecords = async () => {
     const devices = ['192.168.18.253', '192.168.18.252'];
     console.log('\n🔄 Checking for new attendance records...');
@@ -132,35 +158,36 @@ const fetchAndSaveNewRecords = async () => {
         const currentBatchData = {
             '192.168.18.253': {},
             '192.168.18.252': {},
-            'combined': {}  // ✅ Combined view ke liye
+            'combined': {}
         };
 
         // Combined data ke liye arrays
         const combinedLogs = [];
-        const combinedUsers = [];
+        const combinedAllUsers = [];
         const combinedAdminUsers = [];
 
         results.forEach((result, index) => {
             const ip = devices[index];
             
             if (result.status === 'fulfilled') {
-                const logs = result.value.attendanceLogs;
+                const deviceData = result.value;
                 
                 // Device-specific data
                 currentBatchData[ip] = { 
-                    ...result.value, 
-                    attendanceLogs: logs,
-                    allUsers: result.value.allUsers || [],
-                    adminUsers: result.value.adminUsers || [],
-                    info: result.value.info || {}
+                    ...deviceData,
+                    attendanceLogs: deviceData.attendanceLogs,
+                    allUsers: deviceData.allUsers,
+                    adminUsers: deviceData.adminUsers,
+                    info: deviceData.info
                 };
 
                 // Combined data collect karo
-                combinedLogs.push(...logs);
-                if (result.value.allUsers) combinedUsers.push(...result.value.allUsers);
-                if (result.value.adminUsers) combinedAdminUsers.push(...result.value.adminUsers);
+                combinedLogs.push(...deviceData.attendanceLogs);
+                combinedAllUsers.push(...deviceData.allUsers);
+                combinedAdminUsers.push(...deviceData.adminUsers);
 
-                logs.forEach(record => {
+                // Check for new attendance records
+                deviceData.attendanceLogs.forEach(record => {
                     const sig = createRecordSignature(record);
                     if (!uniqueSignatures.has(sig)) {
                         uniqueSignatures.add(sig);
@@ -171,19 +198,28 @@ const fetchAndSaveNewRecords = async () => {
 
             } else {
                 currentBatchData[ip] = {
+                    info: {},
+                    allUsers: [],
+                    adminUsers: [],
                     attendanceLogs: [],
+                    deviceIP: ip,
                     status: 'offline',
                     error: result.reason.message
                 };
             }
         });
 
-        // ✅ COMBINED VIEW DATA
+        // ✅ COMBINED VIEW DATA - FIXED: Proper user data
         currentBatchData['combined'] = {
+            info: { 
+                type: 'Combined View', 
+                userCounts: combinedAllUsers.length,
+                logCount: combinedLogs.length 
+            },
+            allUsers: [...new Map(combinedAllUsers.map(user => [user.userId, user])).values()], // Remove duplicates
+            adminUsers: [...new Map(combinedAdminUsers.map(user => [user.userId, user])).values()], // Remove duplicates
             attendanceLogs: combinedLogs,
-            allUsers: [...new Map(combinedUsers.map(user => [user.userId, user])).values()], // Remove duplicates
-            adminUsers: [...new Map(combinedAdminUsers.map(user => [user.userId, user])).values()],
-            info: { type: 'Combined View', userCounts: combinedUsers.length },
+            deviceIP: 'Multiple Devices',
             status: 'online'
         };
 
@@ -192,14 +228,16 @@ const fetchAndSaveNewRecords = async () => {
 
         if (newRecordsCount > 0) {
             saveRecords();
-            console.log(`💾 Added & Saved ${newRecordsCount} NEW records.`);
+            console.log(`💾 Added & Saved ${newRecordsCount} NEW attendance records.`);
+            console.log(`👥 Total users in combined view: ${combinedAllUsers.length}`);
+            console.log(`👑 Admin users: ${combinedAdminUsers.length}`);
         } else {
             console.log(`⏭️ No new records found.`);
         }
 
         return {
             deviceData: latestDeviceData,
-            combinedData: currentBatchData['combined'], // ✅ Ye important hai
+            combinedData: currentBatchData['combined'],
             newRecordsCount,
             totalRecords: allAttendanceRecords.length
         };
@@ -228,13 +266,31 @@ setTimeout(() => {
 
 // Routes
 app.get("/", async (req, res) => {
-    res.render("index", {
-        // FIX: Ensure deviceData is never undefined
-        deviceData: latestDeviceData || {}, 
-        newRecordsCount: 0,
-        totalRecords: allAttendanceRecords.length,
-        allAttendanceRecords: allAttendanceRecords
-    });
+    try {
+        const data = await fetchAndSaveNewRecords();
+        res.render("index", {
+            deviceData: latestDeviceData, 
+            combinedData: latestDeviceData['combined'],
+            newRecordsCount: data.newRecordsCount || 0,
+            totalRecords: allAttendanceRecords.length,
+            allAttendanceRecords: allAttendanceRecords
+        });
+    } catch (error) {
+        res.render("index", {
+            deviceData: latestDeviceData,
+            combinedData: latestDeviceData['combined'] || {
+                info: {},
+                allUsers: [],
+                adminUsers: [],
+                attendanceLogs: [],
+                deviceIP: 'Multiple Devices',
+                status: 'online'
+            },
+            newRecordsCount: 0,
+            totalRecords: allAttendanceRecords.length,
+            allAttendanceRecords: allAttendanceRecords
+        });
+    }
 });
 
 app.get("/force-refresh", async (req, res) => {
@@ -242,22 +298,35 @@ app.get("/force-refresh", async (req, res) => {
     res.json(data);
 });
 
-// FIX: Updated API route to send structure expected by frontend
-// FIX: API route update karo
-app.get("/api/data", (req, res) => {
-    res.json({
-        deviceData: latestDeviceData,
-        combinedData: latestDeviceData['combined'] || {
-            attendanceLogs: [],
-            allUsers: [],
-            adminUsers: [],
-            info: {},
-            status: 'online'
-        },
-        totalRecords: allAttendanceRecords.length,
-        allAttendanceRecords: allAttendanceRecords
-    });
+// Main API endpoint
+app.get("/api/data", async (req, res) => {
+    try {
+        const data = await fetchAndSaveNewRecords();
+        res.json({
+            deviceData: latestDeviceData,
+            combinedData: latestDeviceData['combined'],
+            newRecordsCount: data.newRecordsCount || 0,
+            totalRecords: allAttendanceRecords.length,
+            allAttendanceRecords: allAttendanceRecords
+        });
+    } catch (error) {
+        res.json({
+            deviceData: latestDeviceData,
+            combinedData: latestDeviceData['combined'] || {
+                info: {},
+                allUsers: [],
+                adminUsers: [],
+                attendanceLogs: [],
+                deviceIP: 'Multiple Devices',
+                status: 'online'
+            },
+            newRecordsCount: 0,
+            totalRecords: allAttendanceRecords.length,
+            allAttendanceRecords: allAttendanceRecords
+        });
+    }
 });
+
 // File Management API Endpoints
 app.get("/api/files", (req, res) => {
     try {
@@ -331,14 +400,28 @@ app.post("/api/save", async (req, res) => {
         
         res.json({ 
             message: 'Data saved successfully', 
-            filename: filename 
+            filename: filename,
+            newRecordsCount: data.newRecordsCount || 0,
+            totalUsers: latestDeviceData['combined']?.allUsers?.length || 0
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+    res.json({ 
+        status: 'running',
+        timestamp: new Date().toISOString(),
+        totalRecords: allAttendanceRecords.length,
+        totalUsers: latestDeviceData['combined']?.allUsers?.length || 0,
+        adminUsers: latestDeviceData['combined']?.adminUsers?.length || 0
+    });
+});
 
 app.listen(PORT, () => {
     console.log(`\n🎉 Server: http://localhost:${PORT}`);
+    console.log(`📁 Data directory: ${dataDir}`);
+    console.log(`⏰ Auto fetch: Every 30 minutes`);
 });
