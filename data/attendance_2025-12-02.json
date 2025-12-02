@@ -5983,5 +5983,392 @@
     "name": "Syed Ahsan Moon Taqi",
     "type": "OUT",
     "deviceIP": "192.168.18.252"
+  },
+  {
+    "userSn": 29969,
+    "deviceUserId": "9",
+    "recordTime": "2025-12-01T23:52:49.000Z",
+    "ip": "192.168.18.252",
+    "name": "Taj",
+    "type": "OUT",
+    "deviceIP": "192.168.18.252"
+  },
+  {
+    "userSn": 29970,
+    "deviceUserId": "79",
+    "recordTime": "2025-12-02T00:32:48.000Z",
+    "ip": "192.168.18.252",
+    "name": "Zeeshan",
+    "type": "OUT",
+    "deviceIP": "192.168.18.252"
+  },
+  {
+    "userSn": 29661,
+    "deviceUserId": "51",
+    "recordTime": "2025-12-02T04:15:39.000Z",
+    "ip": "192.168.18.253",
+    "name": "Sajid",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29662,
+    "deviceUserId": "34",
+    "recordTime": "2025-12-02T04:26:29.000Z",
+    "ip": "192.168.18.253",
+    "name": "Linta Muddassir",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29663,
+    "deviceUserId": "41",
+    "recordTime": "2025-12-02T04:31:06.000Z",
+    "ip": "192.168.18.253",
+    "name": "Syed Najeeb Shah",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29664,
+    "deviceUserId": "78",
+    "recordTime": "2025-12-02T04:43:39.000Z",
+    "ip": "192.168.18.253",
+    "name": "Muniba Khan",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29665,
+    "deviceUserId": "11",
+    "recordTime": "2025-12-02T04:43:46.000Z",
+    "ip": "192.168.18.253",
+    "name": "Synthana Anjli",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29666,
+    "deviceUserId": "50",
+    "recordTime": "2025-12-02T04:43:53.000Z",
+    "ip": "192.168.18.253",
+    "name": "Areeba Murtaza",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29667,
+    "deviceUserId": "54",
+    "recordTime": "2025-12-02T05:01:13.000Z",
+    "ip": "192.168.18.253",
+    "name": "Atika Aslam",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29668,
+    "deviceUserId": "30",
+    "recordTime": "2025-12-02T05:09:08.000Z",
+    "ip": "192.168.18.253",
+    "name": "Basit Ayaz",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29669,
+    "deviceUserId": "56",
+    "recordTime": "2025-12-02T05:09:38.000Z",
+    "ip": "192.168.18.253",
+    "name": "Roshan Noman",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29670,
+    "deviceUserId": "76",
+    "recordTime": "2025-12-02T05:24:28.000Z",
+    "ip": "192.168.18.253",
+    "name": "Muhammad Raza",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29671,
+    "deviceUserId": "28",
+    "recordTime": "2025-12-02T05:26:31.000Z",
+    "ip": "192.168.18.253",
+    "name": "Kamran Ali",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29672,
+    "deviceUserId": "2",
+    "recordTime": "2025-12-02T05:31:08.000Z",
+    "ip": "192.168.18.253",
+    "name": "Syed Danyal",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29673,
+    "deviceUserId": "18",
+    "recordTime": "2025-12-02T05:37:48.000Z",
+    "ip": "192.168.18.253",
+    "name": "Muhammad Wasay Khan",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29674,
+    "deviceUserId": "77",
+    "recordTime": "2025-12-02T05:43:28.000Z",
+    "ip": "192.168.18.253",
+    "name": "Azhar",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29675,
+    "deviceUserId": "20",
+    "recordTime": "2025-12-02T05:43:58.000Z",
+    "ip": "192.168.18.253",
+    "name": "Amir Abbas Jaffery ",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29676,
+    "deviceUserId": "36",
+    "recordTime": "2025-12-02T05:48:30.000Z",
+    "ip": "192.168.18.253",
+    "name": "Nehal Nafees",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29677,
+    "deviceUserId": "32",
+    "recordTime": "2025-12-02T05:51:09.000Z",
+    "ip": "192.168.18.253",
+    "name": "Kamran Tayyab",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29678,
+    "deviceUserId": "3",
+    "recordTime": "2025-12-02T05:52:03.000Z",
+    "ip": "192.168.18.253",
+    "name": "Muhammad Ibrahim Parkar",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29679,
+    "deviceUserId": "16",
+    "recordTime": "2025-12-02T05:52:29.000Z",
+    "ip": "192.168.18.253",
+    "name": "Muhammad Haseeb",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29680,
+    "deviceUserId": "12",
+    "recordTime": "2025-12-02T05:56:31.000Z",
+    "ip": "192.168.18.253",
+    "name": "Jatin Kumar",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29681,
+    "deviceUserId": "5",
+    "recordTime": "2025-12-02T06:02:15.000Z",
+    "ip": "192.168.18.253",
+    "name": "Alishba Khan",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29682,
+    "deviceUserId": "71",
+    "recordTime": "2025-12-02T06:03:53.000Z",
+    "ip": "192.168.18.253",
+    "name": "Moiz Ahmed Siddiqui",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29683,
+    "deviceUserId": "27",
+    "recordTime": "2025-12-02T06:06:56.000Z",
+    "ip": "192.168.18.253",
+    "name": "Kashan Hasan",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29684,
+    "deviceUserId": "53",
+    "recordTime": "2025-12-02T06:07:59.000Z",
+    "ip": "192.168.18.253",
+    "name": "Sumair",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29685,
+    "deviceUserId": "14",
+    "recordTime": "2025-12-02T06:08:05.000Z",
+    "ip": "192.168.18.253",
+    "name": "Waqas Abbasi",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29686,
+    "deviceUserId": "70",
+    "recordTime": "2025-12-02T06:09:51.000Z",
+    "ip": "192.168.18.253",
+    "name": "Faraz Abbas",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29687,
+    "deviceUserId": "59",
+    "recordTime": "2025-12-02T06:18:31.000Z",
+    "ip": "192.168.18.253",
+    "name": "Uzair Sajid",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29688,
+    "deviceUserId": "60",
+    "recordTime": "2025-12-02T06:31:04.000Z",
+    "ip": "192.168.18.253",
+    "name": "Junaid Sajid",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29689,
+    "deviceUserId": "61",
+    "recordTime": "2025-12-02T06:52:34.000Z",
+    "ip": "192.168.18.253",
+    "name": "Abdul Raziq",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29690,
+    "deviceUserId": "42",
+    "recordTime": "2025-12-02T07:09:06.000Z",
+    "ip": "192.168.18.253",
+    "name": "Muhammad Hanzala",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29691,
+    "deviceUserId": "19",
+    "recordTime": "2025-12-02T07:12:34.000Z",
+    "ip": "192.168.18.253",
+    "name": "Muhammad Shaheer Shamsi",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29692,
+    "deviceUserId": "17",
+    "recordTime": "2025-12-02T07:52:58.000Z",
+    "ip": "192.168.18.253",
+    "name": "Arsalan Javed",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29971,
+    "deviceUserId": "17",
+    "recordTime": "2025-12-02T07:50:46.000Z",
+    "ip": "192.168.18.252",
+    "name": "Arsalan Javed",
+    "type": "OUT",
+    "deviceIP": "192.168.18.252"
+  },
+  {
+    "userSn": 29693,
+    "deviceUserId": "74",
+    "recordTime": "2025-12-02T08:17:00.000Z",
+    "ip": "192.168.18.253",
+    "name": "Muhammad Sami",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29694,
+    "deviceUserId": "13",
+    "recordTime": "2025-12-02T08:27:47.000Z",
+    "ip": "192.168.18.253",
+    "name": "Muhammad Danish",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29695,
+    "deviceUserId": "31",
+    "recordTime": "2025-12-02T09:20:47.000Z",
+    "ip": "192.168.18.253",
+    "name": "Azim Aziz",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29696,
+    "deviceUserId": "10",
+    "recordTime": "2025-12-02T09:22:09.000Z",
+    "ip": "192.168.18.253",
+    "name": "Abdul Moiz Khan",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29697,
+    "deviceUserId": "7",
+    "recordTime": "2025-12-02T09:51:14.000Z",
+    "ip": "192.168.18.253",
+    "name": "Ramish Khan",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29698,
+    "deviceUserId": "75",
+    "recordTime": "2025-12-02T10:03:15.000Z",
+    "ip": "192.168.18.253",
+    "name": "Muhammad Ahmed",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29699,
+    "deviceUserId": "26",
+    "recordTime": "2025-12-02T12:15:18.000Z",
+    "ip": "192.168.18.253",
+    "name": "Nihal Najam",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
+  },
+  {
+    "userSn": 29700,
+    "deviceUserId": "33",
+    "recordTime": "2025-12-02T12:47:53.000Z",
+    "ip": "192.168.18.253",
+    "name": "Syed Azadar Hussain",
+    "type": "IN",
+    "deviceIP": "192.168.18.253"
   }
 ]

@@ -173,7 +173,7 @@ const sendToCSharpAPI = async (records) => {
         const convertedRecords = convertToCSharpFormat(records);
         
         // Send to your C# API endpoint
-        const response = await axios.post('https://localhost:5001/api/attendance/upload-file', 
+        const response = await axios.post('https://api20230805195433.azurewebsites.net/api/attendance/upload-file', 
             convertedRecords,
             {
                 headers: {
@@ -357,7 +357,7 @@ app.get("/api/force-sync", async (req, res) => {
 // ==================== STARTUP ====================
 console.log('🚀 Starting ZKTeco Device Sync Scheduler...');
 console.log('📡 This app will automatically sync with devices every 30 minutes');
-console.log('🌐 And send data to C# API at: https://localhost:5001/api/attendance/upload-file');
+console.log('🌐 And send data to C# API at: https://api20230805195433.azurewebsites.net/api/attendance/upload-file');
 
 loadExistingRecords();
 
@@ -471,7 +471,7 @@ app.get("/api/health", (req, res) => {
             uniqueSignatures: uniqueSignatures.size
         },
         csharpApi: {
-            endpoint: 'https://localhost:5001/api/attendance/upload-file',
+            endpoint: 'https://api20230805195433.azurewebsites.net/api/attendance/upload-file',
             status: 'Active'
         }
     });
@@ -502,7 +502,7 @@ app.get("/api/status", (req, res) => {
             lastLocalSave: new Date().toLocaleString()
         },
         apiIntegration: {
-            csharpApi: 'https://localhost:5001/api/attendance/upload-file',
+            csharpApi: 'https://api20230805195433.azurewebsites.net/api/attendance/upload-file',
             method: 'POST',
             format: 'JSON array of AttendanceRecordDto'
         }
@@ -513,7 +513,7 @@ app.listen(PORT, () => {
     console.log(`\n🎉 Scheduler Dashboard: http://localhost:${PORT}`);
     console.log(`📁 Local Data Directory: ${dataDir}`);
     console.log(`⏰ Auto Sync: Every 30 minutes`);
-    console.log(`📤 Target API: https://localhost:5001/api/attendance/upload-file`);
+    console.log(`📤 Target API: https://api20230805195433.azurewebsites.net/api/attendance/upload-file`);
     console.log(`\n📋 Manual Trigger Endpoints:`);
     console.log(`   http://localhost:${PORT}/api/trigger-sync - Manual sync`);
     console.log(`   http://localhost:${PORT}/api/force-sync - Force sync`);

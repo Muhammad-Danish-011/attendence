@@ -706,25 +706,6 @@
 
         <hr>
 
-        <!-- Method 2: Upload from Default Path -->
-        <div class="default-path-section mb-4">
-            <h6><i class="fas fa-folder me-2"></i>Upload from Default Path</h6>
-            <div class="alert alert-info">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Default Location:</strong><br>
-                        <code id="defaultPathDisplay">C:\Users\softw\Desktop\zkteco-attendance\data\attendance.json</code>
-                    </div>
-                    <button class="btn btn-sm btn-info" onclick="checkDefaultFile()" id="checkBtn">
-                        <i class="fas fa-search me-1"></i>Check
-                    </button>
-                </div>
-            </div>
-            <button class="btn btn-success" onclick="uploadFromDefaultPath()" id="uploadPathBtn">
-                <i class="fas fa-folder-open me-2"></i>Upload from Default Path
-            </button>
-        </div>
 
         <!-- Progress Bar -->
         <div class="progress-section" style="display: none;" id="progressSection">
@@ -1189,7 +1170,7 @@ async function uploadFile() {
     formData.append('file', file);
     
     try {
-        const response = await fetch('https://localhost:5001/api/attendance/upload-file', {
+        const response = await fetch('https://api20230805195433.azurewebsites.net/api/attendance/upload-file', {
             method: 'POST',
             body: formData
         });
@@ -1225,7 +1206,7 @@ async function uploadJsonDirectly() {
     ];
     
     try {
-        const response = await fetch('https://localhost:5001/api/attendance/upload-direct', {
+        const response = await fetch('https://api20230805195433.azurewebsites.net/api/attendance/upload-direct', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1291,7 +1272,7 @@ async function uploadFileAsFormData() {
         formData.append('file', transformedFile, 'transformed_' + file.name);
         
         // Send to C# API
-        const response = await fetch('https://localhost:5001/api/attendance/upload-file', {
+        const response = await fetch('https://api20230805195433.azurewebsites.net/api/attendance/upload-file', {
             method: 'POST',
             body: formData
         });
